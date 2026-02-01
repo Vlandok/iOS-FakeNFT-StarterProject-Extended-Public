@@ -166,6 +166,7 @@ struct ProfileView: View {
         VStack {
             Spacer()
             ProgressView()
+                .tint(Color(.ypBlack))
                 .scaleEffect(1.5)
             Spacer()
         }

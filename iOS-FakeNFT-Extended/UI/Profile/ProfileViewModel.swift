@@ -1,9 +1,8 @@
 import Foundation
-import Combine
 
 // MARK: - Profile State
 
-enum ProfileState {
+enum ProfileState: Sendable {
     case initial
     case loading
     case loaded(Profile)
@@ -12,7 +11,7 @@ enum ProfileState {
 
 // MARK: - Profile Model
 
-struct Profile {
+struct Profile: Sendable {
     let id: String
     let name: String
     let description: String
@@ -27,6 +26,12 @@ struct Profile {
 @MainActor
 final class ProfileViewModel: ObservableObject {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        static let defaultProfileId = "1"
+    }
+    
     // MARK: - Published Properties
     
     @Published private(set) var state: ProfileState = .initial
@@ -36,7 +41,7 @@ final class ProfileViewModel: ObservableObject {
     
     // MARK: - Dependencies
     
-    // private let profileService: ProfileService // TODO: Add when service is ready
+    private let profileService: ProfileService
     
     // MARK: - Computed Properties
     
@@ -79,8 +84,9 @@ final class ProfileViewModel: ObservableObject {
     
     // MARK: - Init
     
-    init() {
-        loadMockData()
+    init(profileService: ProfileService = ProfileServiceImpl(networkClient: DefaultNetworkClient())) {
+        self.profileService = profileService
+        loadProfile()
     }
     
     // MARK: - Public Methods
@@ -88,22 +94,20 @@ final class ProfileViewModel: ObservableObject {
     func loadProfile() {
         state = .loading
         isLoading = true
+        errorMessage = nil
         
-        // TODO: Replace with real API call
-        // Task {
-        //     do {
-        //         let profile = try await profileService.loadProfile()
-        //         self.profile = profile
-        //         self.state = .loaded(profile)
-        //     } catch {
-        //         self.state = .error(error.localizedDescription)
-        //         self.errorMessage = error.localizedDescription
-        //     }
-        //     self.isLoading = false
-        // }
-        
-        // Mock implementation
-        loadMockData()
+        Task {
+            do {
+                let profile = try await profileService.loadProfile(id: Constants.defaultProfileId)
+                self.profile = profile
+                self.state = .loaded(profile)
+            } catch {
+                let message = Self.mapError(error)
+                self.state = .error(message)
+                self.errorMessage = message
+            }
+            self.isLoading = false
+        }
     }
     
     func navigateToMyNft() {
@@ -123,19 +127,16 @@ final class ProfileViewModel: ObservableObject {
     
     // MARK: - Private Methods
     
-    private func loadMockData() {
-        let mockProfile = Profile(
-            id: "1",
-            name: "Joaquin Phoenix",
-            description: "Дизайнер из Казани, люблю цифровое искусство\nи бейглы. В моей коллекции уже 100+ NFT,\nи еще больше — на моём сайте. Открыт\nк коллаборациям.",
-            website: "Joaquin Phoenix.com",
-            avatarURL: URL(string: "https://code.s3.yandex.net/landings-v2-ios-developer/space.PNG"),
-            nftsCount: 112,
-            favoritesCount: 11
-        )
-        
-        self.profile = mockProfile
-        self.state = .loaded(mockProfile)
-        self.isLoading = false
+    private static func mapError(_ error: Error) -> String {
+        switch error {
+        case NetworkClientError.httpStatusCode(let code):
+            return NSLocalizedString("Error.network", comment: "") + " (\(code))"
+        case NetworkClientError.urlSessionError:
+            return NSLocalizedString("Error.network", comment: "")
+        case NetworkClientError.parsingError:
+            return NSLocalizedString("Error.parsing", comment: "")
+        default:
+            return error.localizedDescription
+        }
     }
 }

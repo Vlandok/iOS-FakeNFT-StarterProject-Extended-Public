@@ -10,6 +10,9 @@
 		86F4C9C02F2FDE5200A0D5A8 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86F4C9BD2F2FDE5200A0D5A8 /* ProfileView.swift */; };
 		86F4C9C12F2FDE5200A0D5A8 /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86F4C9BE2F2FDE5200A0D5A8 /* ProfileViewModel.swift */; };
 		86F4C9C32F2FDF0000A0D5A8 /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86F4C9C22F2FDF0000A0D5A8 /* WebView.swift */; };
+		86F4C9C82F2FDF1000A0D5A8 /* ProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86F4C9C52F2FDF1000A0D5A8 /* ProfileService.swift */; };
+		86F4C9C92F2FDF1100A0D5A8 /* ProfileRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86F4C9C62F2FDF1100A0D5A8 /* ProfileRequest.swift */; };
+		86F4C9CA2F2FDF1200A0D5A8 /* ProfileNetworkModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86F4C9C72F2FDF1200A0D5A8 /* ProfileNetworkModel.swift */; };
 		ABC5E16C2C31F5AF002B4068 /* iOS_FakeNFT_ExtendedApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABC5E16B2C31F5AF002B4068 /* iOS_FakeNFT_ExtendedApp.swift */; };
 		ABC5E16E2C31F5AF002B4068 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABC5E16D2C31F5AF002B4068 /* ContentView.swift */; };
 		ABC5E1702C31F5AF002B4068 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ABC5E16F2C31F5AF002B4068 /* Assets.xcassets */; };
@@ -68,6 +71,9 @@
 		86F4C9BD2F2FDE5200A0D5A8 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		86F4C9BE2F2FDE5200A0D5A8 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
 		86F4C9C22F2FDF0000A0D5A8 /* WebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebView.swift; sourceTree = "<group>"; };
+		86F4C9C52F2FDF1000A0D5A8 /* ProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileService.swift; sourceTree = "<group>"; };
+		86F4C9C62F2FDF1100A0D5A8 /* ProfileRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileRequest.swift; sourceTree = "<group>"; };
+		86F4C9C72F2FDF1200A0D5A8 /* ProfileNetworkModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileNetworkModel.swift; sourceTree = "<group>"; };
 		ABC5E1682C31F5AF002B4068 /* iOS-FakeNFT-Extended.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iOS-FakeNFT-Extended.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABC5E16B2C31F5AF002B4068 /* iOS_FakeNFT_ExtendedApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOS_FakeNFT_ExtendedApp.swift; sourceTree = "<group>"; };
 		ABC5E16D2C31F5AF002B4068 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -241,6 +247,7 @@
 			isa = PBXGroup;
 			children = (
 				ABC5E1A02C31F6D7002B4068 /* Nft.swift */,
+				86F4C9C72F2FDF1200A0D5A8 /* ProfileNetworkModel.swift */,
 			);
 			path = Network;
 			sourceTree = "<group>";
@@ -259,6 +266,7 @@
 			children = (
 				ABC5E1AC2C31FB6C002B4068 /* Requests */,
 				ABC5E1AA2C31FACD002B4068 /* NftService.swift */,
+				86F4C9C52F2FDF1000A0D5A8 /* ProfileService.swift */,
 				ABC5E1B62C31FC70002B4068 /* ServicesAssembly.swift */,
 			);
 			path = Services;
@@ -269,6 +277,7 @@
 			children = (
 				ABC5E1B12C31FBD4002B4068 /* ExampleRequest.swift */,
 				ABC5E1AD2C31FB7F002B4068 /* NftByIdRequest.swift */,
+				86F4C9C62F2FDF1100A0D5A8 /* ProfileRequest.swift */,
 				ABC5E1AF2C31FB90002B4068 /* RequestConstants.swift */,
 			);
 			path = Requests;
@@ -500,6 +509,9 @@
 				ABC5E1A82C31FA90002B4068 /* DateFormatters+Presets.swift in Sources */,
 				ABC5E1D12C32042C002B4068 /* NftDetailPresenter.swift in Sources */,
 				ABC5E1B02C31FB90002B4068 /* RequestConstants.swift in Sources */,
+				86F4C9C82F2FDF1000A0D5A8 /* ProfileService.swift in Sources */,
+				86F4C9C92F2FDF1100A0D5A8 /* ProfileRequest.swift in Sources */,
+				86F4C9CA2F2FDF1200A0D5A8 /* ProfileNetworkModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
