@@ -29,48 +29,46 @@ struct EditProfileView: View {
     // MARK: - Body
     
     var body: some View {
-        NavigationStack {
-            ZStack {
-                content
-                
-                if viewModel.isLoading {
-                    loadingOverlay
-                }
+        ZStack {
+            content
+            
+            if viewModel.isLoading {
+                loadingOverlay
             }
-            .background(Color(.ypWhite))
-            .onTapGesture {
-                hideKeyboard()
+        }
+        .background(Color(.ypWhite))
+        .onTapGesture {
+            hideKeyboard()
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                backButton
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    backButton
-                }
-            }
-            .confirmationDialog(
-                NSLocalizedString("EditProfile.photoTitle", comment: ""),
-                isPresented: $viewModel.showPhotoActionSheet,
-                titleVisibility: .visible
-            ) {
-                photoActionButtons
-            }
-            .alert(
-                NSLocalizedString("EditProfile.photoURLTitle", comment: ""),
-                isPresented: $viewModel.showPhotoURLAlert
-            ) {
-                photoURLAlertContent
-            }
-            .alert(
-                NSLocalizedString("EditProfile.exitConfirmation", comment: ""),
-                isPresented: $viewModel.showExitConfirmation
-            ) {
-                exitConfirmationButtons
-            }
-            .onChange(of: viewModel.isSaveSuccessful) { _, success in
-                if success {
-                    dismiss()
-                }
+        }
+        .confirmationDialog(
+            NSLocalizedString("EditProfile.photoTitle", comment: ""),
+            isPresented: $viewModel.showPhotoActionSheet,
+            titleVisibility: .visible
+        ) {
+            photoActionButtons
+        }
+        .alert(
+            NSLocalizedString("EditProfile.photoURLTitle", comment: ""),
+            isPresented: $viewModel.showPhotoURLAlert
+        ) {
+            photoURLAlertContent
+        }
+        .alert(
+            NSLocalizedString("EditProfile.exitConfirmation", comment: ""),
+            isPresented: $viewModel.showExitConfirmation
+        ) {
+            exitConfirmationButtons
+        }
+        .onChange(of: viewModel.isSaveSuccessful) { _, success in
+            if success {
+                dismiss()
             }
         }
     }

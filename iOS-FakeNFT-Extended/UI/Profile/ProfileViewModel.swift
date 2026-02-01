@@ -38,7 +38,6 @@ final class ProfileViewModel: ObservableObject {
     @Published private(set) var profile: Profile?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    @Published var showEditProfile: Bool = false
     
     // MARK: - Dependencies
     
@@ -109,20 +108,6 @@ final class ProfileViewModel: ObservableObject {
             }
             self.isLoading = false
         }
-    }
-    
-    func navigateToMyNft() {
-        // TODO: Implement navigation to My NFT screen
-        print("Navigate to My NFT")
-    }
-    
-    func navigateToFavorites() {
-        // TODO: Implement navigation to Favorites screen
-        print("Navigate to Favorites")
-    }
-    
-    func navigateToEditProfile() {
-        showEditProfile = true
     }
     
     func updateProfile(_ profile: Profile) {

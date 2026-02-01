@@ -24,13 +24,6 @@ struct ProfileView: View {
                         WebViewScreen(url: url)
                     }
                 }
-                .fullScreenCover(isPresented: $viewModel.showEditProfile) {
-                    if let profile = viewModel.profile {
-                        EditProfileView(profile: profile) { updatedProfile in
-                            viewModel.updateProfile(updatedProfile)
-                        }
-                    }
-                }
         }
     }
     
@@ -145,27 +138,40 @@ struct ProfileView: View {
     
     private var menuItems: some View {
         VStack(spacing: 0) {
-            ProfileMenuItem(
-                title: NSLocalizedString("Profile.myNft", comment: ""),
-                count: viewModel.myNftCount,
-                action: viewModel.navigateToMyNft
-            )
+            NavigationLink {
+                MyNFTView(nftCount: viewModel.myNftCount)
+            } label: {
+                ProfileMenuItemLabel(
+                    title: NSLocalizedString("Profile.myNft", comment: ""),
+                    count: viewModel.myNftCount
+                )
+            }
             
-            ProfileMenuItem(
-                title: NSLocalizedString("Profile.favoriteNft", comment: ""),
-                count: viewModel.favoriteNftCount,
-                action: viewModel.navigateToFavorites
-            )
+            NavigationLink {
+                FavoritesNFTView(favoritesCount: viewModel.favoriteNftCount)
+            } label: {
+                ProfileMenuItemLabel(
+                    title: NSLocalizedString("Profile.favoriteNft", comment: ""),
+                    count: viewModel.favoriteNftCount
+                )
+            }
         }
     }
     
     // MARK: - Edit Button
     
+    @ViewBuilder
     private var editButton: some View {
-        Button(action: viewModel.navigateToEditProfile) {
-            Image("EditProfile")
-                .renderingMode(.template)
-                .foregroundColor(Color(.ypBlack))
+        if let profile = viewModel.profile {
+            NavigationLink {
+                EditProfileView(profile: profile) { updatedProfile in
+                    viewModel.updateProfile(updatedProfile)
+                }
+            } label: {
+                Image("EditProfile")
+                    .renderingMode(.template)
+                    .foregroundColor(Color(.ypBlack))
+            }
         }
     }
     
@@ -212,28 +218,25 @@ struct ProfileView: View {
     }
 }
 
-// MARK: - Profile Menu Item
+// MARK: - Profile Menu Item Label
 
-struct ProfileMenuItem: View {
+struct ProfileMenuItemLabel: View {
     let title: String
     let count: Int
-    let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
-            HStack {
-                Text("\(title)  (\(count))")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(Color(.ypBlack))
-                
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(.ypBlack))
-            }
-            .padding(.vertical, 16)
+        HStack {
+            Text("\(title)  (\(count))")
+                .font(.system(size: 17, weight: .bold))
+                .foregroundColor(Color(.ypBlack))
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color(.ypBlack))
         }
+        .padding(.vertical, 16)
     }
 }
 
