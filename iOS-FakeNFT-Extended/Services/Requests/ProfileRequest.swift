@@ -23,6 +23,8 @@ struct ProfileUpdateRequest: NetworkRequest {
     var httpMethod: HttpMethod { .put }
     
     var dto: Encodable? { body }
+    
+    var contentType: ContentType { .formUrlEncoded }
 }
 
 /// DTO для обновления профиля

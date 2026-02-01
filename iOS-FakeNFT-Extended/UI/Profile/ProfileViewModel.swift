@@ -38,6 +38,7 @@ final class ProfileViewModel: ObservableObject {
     @Published private(set) var profile: Profile?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var showEditProfile: Bool = false
     
     // MARK: - Dependencies
     
@@ -121,8 +122,12 @@ final class ProfileViewModel: ObservableObject {
     }
     
     func navigateToEditProfile() {
-        // TODO: Implement navigation to Edit Profile screen
-        print("Navigate to Edit Profile")
+        showEditProfile = true
+    }
+    
+    func updateProfile(_ profile: Profile) {
+        self.profile = profile
+        self.state = .loaded(profile)
     }
     
     // MARK: - Private Methods

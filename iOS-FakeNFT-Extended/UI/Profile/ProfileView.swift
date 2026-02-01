@@ -24,6 +24,13 @@ struct ProfileView: View {
                         WebViewScreen(url: url)
                     }
                 }
+                .fullScreenCover(isPresented: $viewModel.showEditProfile) {
+                    if let profile = viewModel.profile {
+                        EditProfileView(profile: profile) { updatedProfile in
+                            viewModel.updateProfile(updatedProfile)
+                        }
+                    }
+                }
         }
     }
     
@@ -129,6 +136,8 @@ struct ProfileView: View {
             Text(viewModel.userWebsite)
                 .font(.system(size: 15, weight: .regular))
                 .foregroundColor(Color(.ypBlue))
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
     
