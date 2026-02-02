@@ -25,6 +25,22 @@ struct MyNFTView: View {
                     }
                 }
             }
+            .confirmationDialog(
+                NSLocalizedString("MyNFT.sort", comment: ""),
+                isPresented: $viewModel.showSortOptions,
+                titleVisibility: .visible
+            ) {
+                Button(NSLocalizedString("MyNFT.sortByPrice", comment: "")) {
+                    viewModel.sortByPrice()
+                }
+                Button(NSLocalizedString("MyNFT.sortByRating", comment: "")) {
+                    viewModel.sortByRating()
+                }
+                Button(NSLocalizedString("MyNFT.sortByName", comment: "")) {
+                    viewModel.sortByName()
+                }
+                Button(NSLocalizedString("Common.cancel", comment: ""), role: .cancel) {}
+            }
     }
     
     @ViewBuilder
@@ -101,6 +117,7 @@ struct MyNFTView: View {
     
     private var sortButton: some View {
         Button {
+            viewModel.showSortOptions = true
         } label: {
             Image("SortIcon")
                 .renderingMode(.template)

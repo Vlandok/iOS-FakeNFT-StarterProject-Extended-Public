@@ -35,6 +35,8 @@ struct NFTListCell: View {
                 Text(String(format: "%.2f ETH", nft.price).replacingOccurrences(of: ".", with: ","))
                     .font(.system(size: 17, weight: .bold))
                     .foregroundColor(Color(.ypBlack))
+                    .lineLimit(1)
+                    .fixedSize()
             }
         }
         .padding(.leading, 16)

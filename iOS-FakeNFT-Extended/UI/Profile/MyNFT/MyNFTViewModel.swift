@@ -1,7 +1,5 @@
 import Foundation
 
-// MARK: - MyNFT State
-
 enum MyNFTState: Sendable {
     case initial
     case loading
@@ -10,7 +8,13 @@ enum MyNFTState: Sendable {
     case error(String)
 }
 
-// MARK: - NFT Item Model
+enum MyNFTSortOption: String {
+    case price
+    case rating
+    case name
+    
+    static let `default`: MyNFTSortOption = .rating
+}
 
 struct NFTItem: Identifiable, Sendable {
     let id: String
@@ -22,21 +26,23 @@ struct NFTItem: Identifiable, Sendable {
     let isLiked: Bool
 }
 
-// MARK: - MyNFTViewModel
-
 @MainActor
 final class MyNFTViewModel: ObservableObject {
     
-    // MARK: - Published Properties
+    private enum Constants {
+        static let sortOptionKey = "MyNFTSortOption"
+    }
     
     @Published private(set) var state: MyNFTState = .initial
     @Published private(set) var nfts: [NFTItem] = []
-    
-    // MARK: - Private Properties
+    @Published var showSortOptions: Bool = false
     
     private let likedNFTIds: Set<String>
-    
-    // MARK: - Computed Properties
+    private var currentSortOption: MyNFTSortOption {
+        didSet {
+            UserDefaults.standard.set(currentSortOption.rawValue, forKey: Constants.sortOptionKey)
+        }
+    }
     
     var isEmpty: Bool {
         nfts.isEmpty
@@ -47,19 +53,48 @@ final class MyNFTViewModel: ObservableObject {
         return false
     }
     
-    // MARK: - Init
-    
     init(nftIds: [String] = [], likedIds: [String] = []) {
         self.likedNFTIds = Set(likedIds)
+        
+        if let savedValue = UserDefaults.standard.string(forKey: Constants.sortOptionKey),
+           let savedOption = MyNFTSortOption(rawValue: savedValue) {
+            self.currentSortOption = savedOption
+        } else {
+            self.currentSortOption = .default
+        }
+        
         loadMockData()
     }
     
-    // MARK: - Private Methods
+    func sortByPrice() {
+        currentSortOption = .price
+        applyCurrentSort()
+    }
+    
+    func sortByRating() {
+        currentSortOption = .rating
+        applyCurrentSort()
+    }
+    
+    func sortByName() {
+        currentSortOption = .name
+        applyCurrentSort()
+    }
+    
+    private func applyCurrentSort() {
+        switch currentSortOption {
+        case .price:
+            nfts.sort { $0.price < $1.price }
+        case .rating:
+            nfts.sort { $0.rating > $1.rating }
+        case .name:
+            nfts.sort { $0.name.localizedCompare($1.name) == .orderedAscending }
+        }
+    }
     
     private func loadMockData() {
         state = .loading
         
-        // Mock data - будет заменено на реальный API
         let mockNFTs: [NFTItem] = [
             NFTItem(
                 id: "1",
@@ -74,23 +109,24 @@ final class MyNFTViewModel: ObservableObject {
                 id: "2",
                 name: "Spring",
                 imageURL: URL(string: "https://code.s3.yandex.net/Mobile/iOS/NFT/Green/Melissa/1.png"),
-                rating: 3,
+                rating: 4,
                 author: "John Doe",
-                price: 1.78,
+                price: 2.50,
                 isLiked: likedNFTIds.contains("2")
             ),
             NFTItem(
                 id: "3",
                 name: "April",
                 imageURL: URL(string: "https://code.s3.yandex.net/Mobile/iOS/NFT/Beige/Finn/1.png"),
-                rating: 3,
+                rating: 5,
                 author: "John Doe",
-                price: 1.78,
+                price: 0.99,
                 isLiked: likedNFTIds.contains("3")
             )
         ]
         
         nfts = mockNFTs
+        applyCurrentSort()
         state = nfts.isEmpty ? .empty : .loaded(nfts)
     }
     
