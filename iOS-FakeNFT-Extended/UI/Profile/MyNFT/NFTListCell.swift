@@ -12,6 +12,7 @@ struct NFTListCell: View {
                 Text(nft.name)
                     .font(.system(size: 17, weight: .bold))
                     .foregroundColor(Color(.ypBlack))
+                    .lineLimit(1)
                 
                 ratingStars
                 
@@ -22,10 +23,10 @@ struct NFTListCell: View {
                     Text(nft.author)
                         .font(.system(size: 13, weight: .regular))
                         .foregroundColor(Color(.ypBlack))
+                        .lineLimit(1)
                 }
             }
-            
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(NSLocalizedString("MyNFT.price", comment: ""))
@@ -36,11 +37,11 @@ struct NFTListCell: View {
                     .font(.system(size: 17, weight: .bold))
                     .foregroundColor(Color(.ypBlack))
                     .lineLimit(1)
-                    .fixedSize()
             }
+            .fixedSize(horizontal: true, vertical: false)
         }
         .padding(.leading, 16)
-        .padding(.trailing, 40)
+        .padding(.trailing, 16)
         .padding(.vertical, 16)
     }
     

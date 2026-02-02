@@ -5,7 +5,7 @@ struct MyNFTView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel: MyNFTViewModel
     
-    init(nftIds: [String] = [], likedIds: [String] = []) {
+    init(nftIds: [String], likedIds: [String]) {
         _viewModel = StateObject(wrappedValue: MyNFTViewModel(nftIds: nftIds, likedIds: likedIds))
     }
     
@@ -128,12 +128,15 @@ struct MyNFTView: View {
 
 #Preview("With NFTs") {
     NavigationStack {
-        MyNFTView()
+        MyNFTView(
+            nftIds: ["594aaf01-5962-4ab7-a6b5-470ea37beb93"],
+            likedIds: ["594aaf01-5962-4ab7-a6b5-470ea37beb93"]
+        )
     }
 }
 
 #Preview("Empty") {
     NavigationStack {
-        MyNFTView(nftIds: [])
+        MyNFTView(nftIds: [], likedIds: [])
     }
 }

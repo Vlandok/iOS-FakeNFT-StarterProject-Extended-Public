@@ -37,6 +37,8 @@ final class MyNFTViewModel: ObservableObject {
     @Published private(set) var nfts: [NFTItem] = []
     @Published var showSortOptions: Bool = false
     
+    private let nftService: MyNFTListService
+    private let nftIds: [String]
     private let likedNFTIds: Set<String>
     private var currentSortOption: MyNFTSortOption {
         didSet {
@@ -53,8 +55,14 @@ final class MyNFTViewModel: ObservableObject {
         return false
     }
     
-    init(nftIds: [String] = [], likedIds: [String] = []) {
+    init(
+        nftIds: [String],
+        likedIds: [String],
+        nftService: MyNFTListService = MyNFTListServiceImpl(networkClient: DefaultNetworkClient())
+    ) {
+        self.nftIds = nftIds
         self.likedNFTIds = Set(likedIds)
+        self.nftService = nftService
         
         if let savedValue = UserDefaults.standard.string(forKey: Constants.sortOptionKey),
            let savedOption = MyNFTSortOption(rawValue: savedValue) {
@@ -63,7 +71,7 @@ final class MyNFTViewModel: ObservableObject {
             self.currentSortOption = .default
         }
         
-        loadMockData()
+        loadNFTs()
     }
     
     func sortByPrice() {
@@ -92,42 +100,36 @@ final class MyNFTViewModel: ObservableObject {
         }
     }
     
-    private func loadMockData() {
+    private func loadNFTs() {
+        guard !nftIds.isEmpty else {
+            state = .empty
+            return
+        }
+        
         state = .loading
         
-        let mockNFTs: [NFTItem] = [
-            NFTItem(
-                id: "1",
-                name: "Lilo",
-                imageURL: URL(string: "https://code.s3.yandex.net/Mobile/iOS/NFT/Pink/Lilo/1.png"),
-                rating: 3,
-                author: "John Doe",
-                price: 1.78,
-                isLiked: likedNFTIds.contains("1")
-            ),
-            NFTItem(
-                id: "2",
-                name: "Spring",
-                imageURL: URL(string: "https://code.s3.yandex.net/Mobile/iOS/NFT/Green/Melissa/1.png"),
-                rating: 4,
-                author: "John Doe",
-                price: 2.50,
-                isLiked: likedNFTIds.contains("2")
-            ),
-            NFTItem(
-                id: "3",
-                name: "April",
-                imageURL: URL(string: "https://code.s3.yandex.net/Mobile/iOS/NFT/Beige/Finn/1.png"),
-                rating: 5,
-                author: "John Doe",
-                price: 0.99,
-                isLiked: likedNFTIds.contains("3")
-            )
-        ]
-        
-        nfts = mockNFTs
-        applyCurrentSort()
-        state = nfts.isEmpty ? .empty : .loaded(nfts)
+        Task { @MainActor in
+            do {
+                let networkModels = try await nftService.loadNFTs(ids: nftIds)
+                
+                nfts = networkModels.map { model in
+                    NFTItem(
+                        id: model.id,
+                        name: model.name,
+                        imageURL: model.images.first.flatMap { URL(string: $0) },
+                        rating: model.rating,
+                        author: model.author,
+                        price: model.price,
+                        isLiked: likedNFTIds.contains(model.id)
+                    )
+                }
+                
+                applyCurrentSort()
+                state = nfts.isEmpty ? .empty : .loaded(nfts)
+            } catch {
+                state = .error(Self.mapError(error))
+            }
+        }
     }
     
     private static func mapError(_ error: Error) -> String {

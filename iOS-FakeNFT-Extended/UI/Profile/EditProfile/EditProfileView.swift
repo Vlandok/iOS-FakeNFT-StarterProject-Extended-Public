@@ -305,8 +305,8 @@ struct EditProfileView: View {
             description: "Дизайнер из Казани",
             website: "joaquinphoenix.com",
             avatarURL: URL(string: "https://code.s3.yandex.net/landings-v2-ios-developer/space.PNG"),
-            nftsCount: 112,
-            favoritesCount: 11
+            nftIds: [],
+            likeIds: []
         )
     )
 }
