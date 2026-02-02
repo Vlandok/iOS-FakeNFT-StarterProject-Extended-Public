@@ -76,7 +76,7 @@ final class EditProfileViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        Task {
+        Task { @MainActor in
             do {
                 let update = ProfileUpdateDTO(
                     name: name,

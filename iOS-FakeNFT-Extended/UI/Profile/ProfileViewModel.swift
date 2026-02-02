@@ -96,7 +96,7 @@ final class ProfileViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        Task {
+        Task { @MainActor in
             do {
                 let profile = try await profileService.loadProfile(id: Constants.defaultProfileId)
                 self.profile = profile
