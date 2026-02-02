@@ -139,7 +139,7 @@ struct ProfileView: View {
     private var menuItems: some View {
         VStack(spacing: 0) {
             NavigationLink {
-                MyNFTView(nftCount: viewModel.myNftCount)
+                MyNFTView()
             } label: {
                 ProfileMenuItemLabel(
                     title: NSLocalizedString("Profile.myNft", comment: ""),

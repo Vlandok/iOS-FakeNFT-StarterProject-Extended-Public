@@ -26,6 +26,18 @@
 "EditProfile.stay" = "Остаться";
 "EditProfile.exit" = "Выйти";
 
+// MARK: - My NFT
+"MyNFT.title" = "Мои NFT";
+"MyNFT.empty" = "У Вас ещё нет NFT";
+"MyNFT.price" = "Цена";
+"MyNFT.sort" = "Сортировка";
+"MyNFT.sortByPrice" = "По цене";
+"MyNFT.sortByRating" = "По рейтингу";
+"MyNFT.sortByName" = "По названию";
+
+// MARK: - Common
+"Common.cancel" = "Закрыть";
+
 // MARK: - Errors
 "Error.network" = "Произошла ошибка сети";
 "Error.parsing" = "Ошибка обработки данных";

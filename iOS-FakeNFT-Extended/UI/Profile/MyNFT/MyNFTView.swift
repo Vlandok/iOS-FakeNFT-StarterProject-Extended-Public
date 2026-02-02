@@ -2,44 +2,92 @@ import SwiftUI
 
 struct MyNFTView: View {
     
-    // MARK: - Environment
-    
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var viewModel: MyNFTViewModel
     
-    // MARK: - Properties
-    
-    let nftCount: Int
-    
-    // MARK: - Body
+    init(nftIds: [String] = [], likedIds: [String] = []) {
+        _viewModel = StateObject(wrappedValue: MyNFTViewModel(nftIds: nftIds, likedIds: likedIds))
+    }
     
     var body: some View {
-        VStack {
-            Spacer()
-            
-            Text("Мои NFT")
-                .font(.system(size: 22, weight: .bold))
-                .foregroundColor(Color(.ypBlack))
-            
-            Text("Количество: \(nftCount)")
-                .font(.system(size: 17))
-                .foregroundColor(Color(.ypBlack))
-                .padding(.top, 8)
-            
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.ypWhite))
-        .navigationTitle(NSLocalizedString("Profile.myNft", comment: ""))
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                backButton
+        content
+            .background(Color(.ypWhite))
+            .navigationTitle(viewModel.isEmpty ? "" : NSLocalizedString("MyNFT.title", comment: ""))
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    backButton
+                }
+                if !viewModel.isEmpty {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        sortButton
+                    }
+                }
             }
+    }
+    
+    @ViewBuilder
+    private var content: some View {
+        switch viewModel.state {
+        case .initial, .loading:
+            loadingView
+        case .loaded:
+            nftList
+        case .empty:
+            emptyState
+        case .error(let message):
+            errorView(message: message)
         }
     }
     
-    // MARK: - Back Button
+    private var nftList: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(viewModel.nfts) { nft in
+                    NFTListCell(nft: nft)
+                }
+            }
+            .padding(.top, 20)
+        }
+    }
+    
+    private var loadingView: some View {
+        VStack {
+            Spacer()
+            ProgressView()
+                .tint(Color(.ypBlack))
+                .scaleEffect(1.5)
+            Spacer()
+        }
+    }
+    
+    private var emptyState: some View {
+        VStack {
+            Spacer()
+            Text(NSLocalizedString("MyNFT.empty", comment: ""))
+                .font(.system(size: 17, weight: .bold))
+                .foregroundColor(Color(.ypBlack))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+            Spacer()
+        }
+    }
+    
+    private func errorView(message: String) -> some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 50))
+                .foregroundColor(Color(.ypRed))
+            Text(message)
+                .font(.system(size: 17))
+                .foregroundColor(Color(.ypBlack))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+            Spacer()
+        }
+    }
     
     private var backButton: some View {
         Button {
@@ -50,12 +98,25 @@ struct MyNFTView: View {
                 .foregroundColor(Color(.ypBlack))
         }
     }
+    
+    private var sortButton: some View {
+        Button {
+        } label: {
+            Image("SortIcon")
+                .renderingMode(.template)
+                .foregroundColor(Color(.ypBlack))
+        }
+    }
 }
 
-// MARK: - Preview
-
-#Preview {
+#Preview("With NFTs") {
     NavigationStack {
-        MyNFTView(nftCount: 112)
+        MyNFTView()
+    }
+}
+
+#Preview("Empty") {
+    NavigationStack {
+        MyNFTView(nftIds: [])
     }
 }
