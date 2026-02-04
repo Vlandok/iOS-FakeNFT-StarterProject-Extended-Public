@@ -26,6 +26,12 @@ struct FavoriteNFTItem: Identifiable, Sendable {
 @MainActor
 final class FavoritesNFTViewModel: ObservableObject {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        static let defaultProfileId = "1"
+    }
+    
     // MARK: - Published Properties
     
     @Published private(set) var state: FavoritesNFTState = .initial
@@ -34,7 +40,8 @@ final class FavoritesNFTViewModel: ObservableObject {
     // MARK: - Dependencies
     
     private let nftService: MyNFTListService
-    private let likedNFTIds: [String]
+    private let profileService: ProfileService
+    private var currentLikedIds: [String]
     
     // MARK: - Computed Properties
     
@@ -47,21 +54,27 @@ final class FavoritesNFTViewModel: ObservableObject {
         return false
     }
     
+    var currentLikes: [String] {
+        currentLikedIds
+    }
+    
     // MARK: - Init
     
     init(
         likedIds: [String],
-        nftService: MyNFTListService = MyNFTListServiceImpl(networkClient: DefaultNetworkClient())
+        nftService: MyNFTListService = MyNFTListServiceImpl(networkClient: DefaultNetworkClient()),
+        profileService: ProfileService = ProfileServiceImpl(networkClient: DefaultNetworkClient())
     ) {
-        self.likedNFTIds = likedIds
+        self.currentLikedIds = likedIds
         self.nftService = nftService
+        self.profileService = profileService
         loadFavorites()
     }
     
     // MARK: - Public Methods
     
     func loadFavorites() {
-        guard !likedNFTIds.isEmpty else {
+        guard !currentLikedIds.isEmpty else {
             state = .empty
             return
         }
@@ -70,7 +83,7 @@ final class FavoritesNFTViewModel: ObservableObject {
         
         Task { @MainActor in
             do {
-                let networkModels = try await nftService.loadNFTs(ids: likedNFTIds)
+                let networkModels = try await nftService.loadNFTs(ids: currentLikedIds)
                 
                 nfts = networkModels.map { model in
                     FavoriteNFTItem(
@@ -91,8 +104,8 @@ final class FavoritesNFTViewModel: ObservableObject {
     }
     
     func removeFromFavorites(nftId: String) {
-        // Удаляем локально из списка
         nfts.removeAll { $0.id == nftId }
+        currentLikedIds.removeAll { $0 == nftId }
         
         if nfts.isEmpty {
             state = .empty
@@ -100,10 +113,14 @@ final class FavoritesNFTViewModel: ObservableObject {
             state = .loaded(nfts)
         }
         
-        // TODO: Добавить API вызов для удаления из избранного на сервере
-        // Task {
-        //     try await profileService.updateLikes(likes: nfts.map { $0.id })
-        // }
+        Task {
+            do {
+                let update = ProfileUpdateDTO(likes: currentLikedIds)
+                _ = try await profileService.updateProfile(id: Constants.defaultProfileId, update: update)
+            } catch {
+                // Silently fail - UI already updated optimistically
+            }
+        }
     }
     
     // MARK: - Private Methods

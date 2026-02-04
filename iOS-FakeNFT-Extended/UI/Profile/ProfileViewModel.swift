@@ -126,6 +126,23 @@ final class ProfileViewModel: ObservableObject {
         self.state = .loaded(profile)
     }
     
+    func updateLikes(_ newLikes: [String]) {
+        guard let currentProfile = profile else { return }
+        
+        let updatedProfile = Profile(
+            id: currentProfile.id,
+            name: currentProfile.name,
+            description: currentProfile.description,
+            website: currentProfile.website,
+            avatarURL: currentProfile.avatarURL,
+            nftIds: currentProfile.nftIds,
+            likeIds: newLikes
+        )
+        
+        self.profile = updatedProfile
+        self.state = .loaded(updatedProfile)
+    }
+    
     // MARK: - Private Methods
     
     private static func mapError(_ error: Error) -> String {

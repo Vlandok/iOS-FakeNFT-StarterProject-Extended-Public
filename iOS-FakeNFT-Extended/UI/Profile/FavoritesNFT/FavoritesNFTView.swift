@@ -10,6 +10,10 @@ struct FavoritesNFTView: View {
     
     @StateObject private var viewModel: FavoritesNFTViewModel
     
+    // MARK: - Callback
+    
+    private let onLikesChanged: (([String]) -> Void)?
+    
     // MARK: - Grid Layout
     
     private let columns = [
@@ -19,14 +23,16 @@ struct FavoritesNFTView: View {
     
     // MARK: - Init
     
-    init(likedIds: [String]) {
+    init(likedIds: [String], onLikesChanged: (([String]) -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: FavoritesNFTViewModel(likedIds: likedIds))
+        self.onLikesChanged = onLikesChanged
     }
     
     // MARK: - Body
     
     var body: some View {
         content
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(.ypWhite))
             .navigationTitle(viewModel.isEmpty ? "" : NSLocalizedString("Profile.favoriteNft", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
@@ -62,6 +68,7 @@ struct FavoritesNFTView: View {
                 ForEach(viewModel.nfts) { nft in
                     FavoriteNFTCell(nft: nft) {
                         viewModel.removeFromFavorites(nftId: nft.id)
+                        onLikesChanged?(viewModel.currentLikes)
                     }
                 }
             }
