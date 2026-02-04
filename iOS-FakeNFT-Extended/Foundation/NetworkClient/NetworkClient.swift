@@ -55,14 +55,48 @@ actor DefaultNetworkClient: NetworkClient {
         var urlRequest = URLRequest(url: endpoint)
         urlRequest.httpMethod = request.httpMethod.rawValue
 
-        if let dto = request.dto,
-           let dtoEncoded = try? encoder.encode(dto) {
-            urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            urlRequest.httpBody = dtoEncoded
+        if let dto = request.dto {
+            switch request.contentType {
+            case .json:
+                if let dtoEncoded = try? encoder.encode(dto) {
+                    urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    urlRequest.httpBody = dtoEncoded
+                }
+            case .formUrlEncoded:
+                urlRequest.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+                urlRequest.httpBody = encodeFormUrlEncoded(dto)
+            }
         }
         urlRequest.addValue(RequestConstants.token, forHTTPHeaderField: "X-Practicum-Mobile-Token")
 
         return urlRequest
+    }
+    
+    private func encodeFormUrlEncoded(_ dto: Encodable) -> Data? {
+        guard let data = try? encoder.encode(dto),
+              let dictionary = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        
+        let formString = dictionary.compactMap { key, value -> String? in
+            if let array = value as? [String] {
+                // Encode arrays as multiple values with same key
+                return array.map { item in
+                    let encodedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? key
+                    let encodedValue = item.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? item
+                    return "\(encodedKey)=\(encodedValue)"
+                }.joined(separator: "&")
+            } else {
+                let stringValue = String(describing: value)
+                guard let encodedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                      let encodedValue = stringValue.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+                    return nil
+                }
+                return "\(encodedKey)=\(encodedValue)"
+            }
+        }.joined(separator: "&")
+        
+        return formString.data(using: .utf8)
     }
 
     private func parse<T: Decodable>(data: Data) async throws -> T {

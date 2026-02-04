@@ -4,12 +4,14 @@ struct TabBarView: View {
     var body: some View {
         TabView {
             // Профиль
-            ProfilePlaceholderView()
+            ProfileView()
                 .tabItem {
-                    Label(
-                        NSLocalizedString("Tab.profile", comment: ""),
-                        systemImage: "person.crop.circle.fill"
-                    )
+                    Label {
+                        Text(NSLocalizedString("Tab.profile", comment: ""))
+                    } icon: {
+                        Image("TabIconProfile")
+                            .renderingMode(.template)
+                    }
                 }
             
             // Каталог
@@ -44,13 +46,6 @@ struct TabBarView: View {
 }
 
 // MARK: - Placeholder Views
-
-struct ProfilePlaceholderView: View {
-    var body: some View {
-        Text("Профиль")
-            .font(.title)
-    }
-}
 
 struct CartPlaceholderView: View {
     var body: some View {

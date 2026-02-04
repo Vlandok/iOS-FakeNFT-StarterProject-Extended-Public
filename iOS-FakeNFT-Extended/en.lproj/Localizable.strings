@@ -11,8 +11,24 @@
 "Profile.myNft" = "Мои NFT";
 "Profile.favoriteNft" = "Избранные NFT";
 
+// MARK: - Edit Profile
+"EditProfile.name" = "Имя";
+"EditProfile.description" = "Описание";
+"EditProfile.website" = "Сайт";
+"EditProfile.save" = "Сохранить";
+"EditProfile.photoTitle" = "Фото профиля";
+"EditProfile.changePhoto" = "Изменить фото";
+"EditProfile.deletePhoto" = "Удалить фото";
+"EditProfile.cancel" = "Отмена";
+"EditProfile.photoURLTitle" = "Ссылка на фото";
+"EditProfile.saveURL" = "Сохранить";
+"EditProfile.exitConfirmation" = "Уверены,\nчто хотите выйти?";
+"EditProfile.stay" = "Остаться";
+"EditProfile.exit" = "Выйти";
+
 // MARK: - Errors
 "Error.network" = "Произошла ошибка сети";
+"Error.parsing" = "Ошибка обработки данных";
 "Error.unknown" = "Произошла неизвестная ошибка";
 "Error.repeat" = "Повторить";
 "Error.title" = "Ошибка";
