@@ -148,7 +148,7 @@ struct ProfileView: View {
             }
             
             NavigationLink {
-                FavoritesNFTView(favoritesCount: viewModel.favoriteNftCount)
+                FavoritesNFTView(likedIds: viewModel.likeIds)
             } label: {
                 ProfileMenuItemLabel(
                     title: NSLocalizedString("Profile.favoriteNft", comment: ""),
