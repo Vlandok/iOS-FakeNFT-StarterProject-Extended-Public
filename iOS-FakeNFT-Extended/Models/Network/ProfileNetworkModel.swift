@@ -22,8 +22,8 @@ extension ProfileNetworkModel {
             description: description,
             website: website,
             avatarURL: URL(string: avatar),
-            nftsCount: nfts.count,
-            favoritesCount: likes.count
+            nftIds: nfts,
+            likeIds: likes
         )
     }
 }

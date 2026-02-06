@@ -17,8 +17,11 @@ struct Profile: Sendable {
     let description: String
     let website: String
     let avatarURL: URL?
-    let nftsCount: Int
-    let favoritesCount: Int
+    let nftIds: [String]
+    let likeIds: [String]
+    
+    var nftsCount: Int { nftIds.count }
+    var favoritesCount: Int { likeIds.count }
 }
 
 // MARK: - ProfileViewModel
@@ -67,6 +70,14 @@ final class ProfileViewModel: ObservableObject {
     
     var favoriteNftCount: Int {
         profile?.favoritesCount ?? 0
+    }
+    
+    var nftIds: [String] {
+        profile?.nftIds ?? []
+    }
+    
+    var likeIds: [String] {
+        profile?.likeIds ?? []
     }
     
     var hasWebsite: Bool {
