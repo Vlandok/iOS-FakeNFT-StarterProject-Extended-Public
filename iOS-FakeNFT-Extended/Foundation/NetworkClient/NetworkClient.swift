@@ -80,9 +80,13 @@ actor DefaultNetworkClient: NetworkClient {
         
         let formString = dictionary.compactMap { key, value -> String? in
             if let array = value as? [String] {
+                let encodedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? key
+                // Handle empty arrays - send as "likes=null" to clear
+                if array.isEmpty {
+                    return "\(encodedKey)=null"
+                }
                 // Encode arrays as multiple values with same key
                 return array.map { item in
-                    let encodedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? key
                     let encodedValue = item.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? item
                     return "\(encodedKey)=\(encodedValue)"
                 }.joined(separator: "&")

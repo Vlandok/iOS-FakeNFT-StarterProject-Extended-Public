@@ -26,6 +26,9 @@
 "EditProfile.stay" = "Остаться";
 "EditProfile.exit" = "Выйти";
 
+// MARK: - Favorites NFT
+"FavoritesNFT.empty" = "У Вас ещё нет избранных NFT";
+
 // MARK: - My NFT
 "MyNFT.title" = "Мои NFT";
 "MyNFT.empty" = "У Вас ещё нет NFT";
