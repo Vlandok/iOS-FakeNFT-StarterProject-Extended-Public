@@ -1,10 +1,14 @@
 // MARK: - Tab Bar
 "Tab.profile" = "Профиль";
 "Tab.catalog" = "Каталог";
+<<<<<<< HEAD
 "Tab.cart" = "Корзина";
 "Tab.statistics" = "Статистика";
 
 // MARK: - Catalog
+=======
+"Tab.basket" = "Корзина";
+>>>>>>> 4091c53 (feat(basket): Реализован функционал эпика корзины с мок данными)
 "Catalog.openNft" = "Открыть Nft";
 
 // MARK: - Profile
@@ -47,3 +51,28 @@
 "Error.unknown" = "Произошла неизвестная ошибка";
 "Error.repeat" = "Повторить";
 "Error.title" = "Ошибка";
+
+
+"Basket.empty" = "Корзина пуста";
+"Basket.pay" = "К оплате";
+"Basket.delete.title" = "Удаление из корзины";
+"Basket.delete.message" = "Вы уверены, что хотите удалить %@ из корзины?";
+"Basket.delete.confirm" = "Удалить";
+"Basket.delete.cancel" = "Отмена";
+"Basket.sort.title" = "Сортировка";
+"Basket.sort.price" = "По цене";
+"Basket.sort.rating" = "По рейтингу";
+"Basket.sort.name" = "По названию";
+"Basket.sort.cancel" = "Закрыть";
+
+"Payment.title" = "Выберите способ оплаты";
+"Payment.agreement" = "Пользовательское соглашение";
+"Payment.pay" = "Оплатить";
+"Payment.error.title" = "Ошибка оплаты";
+"Payment.error.message" = "Не удалось выполнить оплату. Попробуйте еще раз.";
+"Payment.error.retry" = "Повторить";
+"Payment.error.cancel" = "Отмена";
+
+"Success.title" = "Успех! Оплата прошла";
+"Success.message" = "Спасибо за покупку NFT! Ваши токены уже в пути.";
+"Success.back" = "Вернуться в каталог";

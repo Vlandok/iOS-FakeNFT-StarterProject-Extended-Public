@@ -60,3 +60,16 @@ struct StatisticsPlaceholderView: View {
             .font(.title)
     }
 }
+
+struct BasketTabView: UIViewControllerRepresentable {
+    @Environment(ServicesAssembly.self) private var services
+    
+    func makeUIViewController(context: Context) -> UIViewController {
+        let assembly = BasketAssembly()
+        return assembly.build(service: services.basketService)
+    }
+    
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+    }
+}
+
