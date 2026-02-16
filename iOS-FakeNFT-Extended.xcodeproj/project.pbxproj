@@ -134,6 +134,7 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		31640A312F42B43A00A5695F /* Catalog */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Catalog; sourceTree = "<group>"; };
+		31640A612F42B9B300A5695F /* Docs */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Docs; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -215,6 +216,7 @@
 		ABC5E15F2C31F5AF002B4068 = {
 			isa = PBXGroup;
 			children = (
+				31640A612F42B9B300A5695F /* Docs */,
 				ABC5E16A2C31F5AF002B4068 /* iOS-FakeNFT-Extended */,
 				ABC5E17B2C31F5B0002B4068 /* iOS-FakeNFT-ExtendedTests */,
 				ABC5E1852C31F5B0002B4068 /* iOS-FakeNFT-ExtendedUITests */,
