@@ -1,5 +1,4 @@
 import SwiftUI
-import Foundation
 
 struct CatalogView: View {
     
@@ -17,7 +16,6 @@ struct CatalogView: View {
                             }
                     }
                 }
-                .padding(.horizontal, 16)
                 .padding(.top, 16)
             }
             .navigationDestination(
@@ -30,11 +28,10 @@ struct CatalogView: View {
                     Button {
                         isSortDialogPresented = true
                     } label: {
-                        Image("SortIcon")
+                        Image(.sortIcon)
                             .resizable()
                             .frame(width: 42, height: 42)
                     }
-                    .padding(.trailing, 9)
                     .confirmationDialog(
                         NSLocalizedString("Catalog.sortTitle", comment: ""),
                         isPresented: $isSortDialogPresented,

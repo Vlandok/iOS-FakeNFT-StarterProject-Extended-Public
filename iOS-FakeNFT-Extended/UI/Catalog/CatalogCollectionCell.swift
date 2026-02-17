@@ -21,9 +21,9 @@ struct CatalogCollectionCell: View {
                 }
             }
             
-            .frame(height: 179)
+            .frame(height: 140)
             .clipShape(RoundedRectangle(cornerRadius: 16))
-            HStack() {
+            HStack {
                 Text(collection.name)
                     .font(.system(size: 17, weight: .bold))
                     .lineLimit(1)
