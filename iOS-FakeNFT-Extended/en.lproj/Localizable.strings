@@ -53,3 +53,4 @@
 "Catalog.sortByName" = "По названию";
 "Catalog.sortByNftCount" = "По количеству NFT";
 "Catalog.cancelButton" = "Отмена";
+"Collection.author" = "Автор коллекции";

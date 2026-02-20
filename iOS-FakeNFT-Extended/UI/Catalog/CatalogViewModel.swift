@@ -3,65 +3,80 @@ import SwiftUI
 @MainActor
 final class CatalogViewModel: ObservableObject {
     
-    @Published private(set) var collections: [CatalogCollection] = []
-    @Published var selectedCollection: CatalogCollection?
-    
-    private var originalCollections: [CatalogCollection] = []
-    private var currentSort: CatalogSortType?
-    
-    init() {
-        loadMockData()
+    enum State {
+        case initial
+        case loading
+        case loaded([CatalogCollectionDomain])
+        case error(String)
     }
     
-    private func loadMockData() {
-        let data = [
-            CatalogCollection(
-                name: "singulis epicuri",
-                nftCount: 12,
-                imageUrl: URL(string: "https://code.s3.yandex.net/Mobile/iOS/NFT/Обложки_коллекций/Brown.png")!
-            ),
-            CatalogCollection(
-                name: "unum reque",
-                nftCount: 8,
-                imageUrl: URL(string: "https://code.s3.yandex.net/Mobile/iOS/NFT/Обложки_коллекций/White.png")!
-            ),
-            CatalogCollection(
-                name: "quem varius",
-                nftCount: 20,
-                imageUrl: URL(string: "https://code.s3.yandex.net/Mobile/iOS/NFT/Обложки_коллекций/Pink.png")!
-            ),
-            CatalogCollection(
-                name: "option moderatius",
-                nftCount: 5,
-                imageUrl: URL(string: "https://code.s3.yandex.net/Mobile/iOS/NFT/Обложки_коллекций/Blue.png")!
-            ),
-            CatalogCollection(
-                name: "simul dolore",
-                nftCount: 14,
-                imageUrl: URL(string: "https://code.s3.yandex.net/Mobile/iOS/NFT/Обложки_коллекций/Gray.png")!
-            )
-        ]
+    @Published private(set) var state: State = .initial
+    @Published var selectedCollection: CatalogCollectionDomain?
+    
+    private var collectionsService: CollectionsService
+    private var originalCollections: [CatalogCollectionDomain] = []
+    private var currentSort: CatalogSortType?
+    
+    init(collectionsService: CollectionsService) {
+        self.collectionsService = collectionsService
+        loadCollections()
+    }
+    
+    func updateService(_ service: CollectionsService) async {
+        self.collectionsService = service
+        loadCollections()
+    }
+    
+    func loadCollections() {
+        state = .loading
         
-        originalCollections = data
-        collections = data
+        Task { @MainActor in
+            do {
+                let networkModels = try await collectionsService.loadCollections()
+                let collections = networkModels.map { CatalogCollectionDomain(from: $0) }
+                
+                originalCollections = collections
+                state = .loaded(collections)
+            } catch {
+                state = .error(Self.mapError(error))
+            }
+        }
     }
     
     func sortCollection(by type: CatalogSortType) {
         currentSort = type
         
+        guard case .loaded(var collections) = state else { return }
+        
         switch type {
         case .byName:
-            collections = originalCollections.sorted {
-                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-            }
+            collections.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         case .byNftCount:
-            collections = originalCollections.sorted {
-                $0.nftCount > $1.nftCount
-            }
+            collections.sort { $0.nftCount > $1.nftCount }
+        }
+        
+        state = .loaded(collections)
+    }
+    
+    func selectCollection(_ collection: CatalogCollectionDomain) {
+        selectedCollection = collection
+    }
+    
+    func retry() {
+        loadCollections()
+    }
+    
+    private static func mapError(_ error: Error) -> String {
+        switch error {
+        case NetworkClientError.httpStatusCode(let code):
+            return "Ошибка сервера: \(code)"
+        case NetworkClientError.urlSessionError:
+            return "Нет соединения с интернетом"
+        case NetworkClientError.parsingError:
+            return "Ошибка обработки данных"
+        default:
+            return error.localizedDescription
         }
     }
     
-    func selectCollection(_ collection: CatalogCollection) {
-        selectedCollection = collection
-    }
 }
