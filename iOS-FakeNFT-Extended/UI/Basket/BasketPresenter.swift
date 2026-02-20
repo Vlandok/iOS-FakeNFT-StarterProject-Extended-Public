@@ -7,7 +7,6 @@ protocol BasketPresenter {
     func deleteItem(at index: Int)
     func sortTapped()
     func payTapped()
-    func markPaymentCompleted()
 }
 
 enum BasketState {
@@ -27,7 +26,6 @@ final class BasketPresenterImpl: BasketPresenter {
     
     private var items: [BasketItem] = []
     private var currentSort: SortType = .byName
-    private var hasCompletedPayment = false // Флаг успешной оплаты
     private var state = BasketState.initial {
         didSet {
             Task { await stateDidChange() }
@@ -38,6 +36,37 @@ final class BasketPresenterImpl: BasketPresenter {
         self.service = service
         self.router = router
         loadSavedSort()
+        setupNotifications()
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    private func setupNotifications() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePaymentSuccess),
+            name: NSNotification.Name("PaymentSuccess"),
+            object: nil
+        )
+    }
+    
+    @objc private func handlePaymentSuccess() {
+        // Очищаем корзину на сервере
+        Task {
+            do {
+                _ = try await service.updateBasket(nftIds: [])
+            } catch {
+                print("Failed to clear basket on server: \(error)")
+            }
+            
+            // В любом случае очищаем локально и показываем пустое состояние
+            await MainActor.run {
+                items.removeAll()
+                state = .empty
+            }
+        }
     }
     
     func viewDidLoad() {
@@ -60,10 +89,6 @@ final class BasketPresenterImpl: BasketPresenter {
     
     func payTapped() {
         router.openPayment(items: items)
-    }
-    
-    func markPaymentCompleted() {
-        hasCompletedPayment = true
     }
     
     private func stateDidChange() async {
@@ -97,38 +122,8 @@ final class BasketPresenterImpl: BasketPresenter {
                 state = .data(items)
             }
         } catch {
-            // Если оплата прошла успешно, показываем пустую корзину
-            if hasCompletedPayment {
-                hasCompletedPayment = false // Сбрасываем флаг
-                state = .empty
-                return
-            }
-            
-           
-            let mockItems = [
-                BasketItem(
-                    id: "1",
-                    name: "Archie",
-                    rating: 5,
-                    price: 1.57,
-                    images: [URL(string: "https://placeholder.com/nft1")!]
-                ),
-                BasketItem(
-                    id: "2",
-                    name: "Astronaut",
-                    rating: 4,
-                    price: 2.19,
-                    images: [URL(string: "https://placeholder.com/nft2")!]
-                ),
-                BasketItem(
-                    id: "3",
-                    name: "Beagle",
-                    rating: 3,
-                    price: 0.99,
-                    images: [URL(string: "https://placeholder.com/nft3")!]
-                )
-            ]
-            state = .data(mockItems)
+            // В случае ошибки показываем пустую корзину
+            state = .empty
         }
     }
     

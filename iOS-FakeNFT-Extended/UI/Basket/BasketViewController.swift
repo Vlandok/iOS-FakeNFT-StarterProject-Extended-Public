@@ -96,24 +96,6 @@ final class BasketViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         presenter.viewDidLoad()
-        
-        // Подписываемся на уведомление об успешной оплате
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handlePaymentSuccess),
-            name: NSNotification.Name("PaymentSuccess"),
-            object: nil
-        )
-    }
-    
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
-    
-    @objc private func handlePaymentSuccess() {
-        // Помечаем что оплата прошла и перезагружаем корзину
-        presenter.markPaymentCompleted()
-        presenter.viewDidLoad()
     }
     
     private func setupUI() {

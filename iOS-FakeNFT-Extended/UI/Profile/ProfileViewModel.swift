@@ -11,17 +11,17 @@ enum ProfileState: Sendable {
 
 // MARK: - Profile Model
 
-struct Profile: Sendable {
-    let id: String
-    let name: String
-    let description: String
-    let website: String
-    let avatarURL: URL?
-    let nftIds: [String]
-    let likeIds: [String]
+public struct Profile: Sendable {
+    public let id: String
+    public let name: String
+    public let description: String
+    public let website: String
+    public let avatarURL: URL?
+    public let nftIds: [String]
+    public let likeIds: [String]
     
-    var nftsCount: Int { nftIds.count }
-    var favoritesCount: Int { likeIds.count }
+    public var nftsCount: Int { nftIds.count }
+    public var favoritesCount: Int { likeIds.count }
 }
 
 // MARK: - ProfileViewModel

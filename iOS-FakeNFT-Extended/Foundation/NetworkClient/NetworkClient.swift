@@ -1,6 +1,6 @@
 import Foundation
 
-enum NetworkClientError: Error {
+public enum NetworkClientError: Error {
     case httpStatusCode(Int)
     case urlRequestError(Error)
     case urlSessionError
@@ -8,17 +8,17 @@ enum NetworkClientError: Error {
     case incorrectRequest(String)
 }
 
-protocol NetworkClient {
+public protocol NetworkClient {
     func send(request: NetworkRequest) async throws -> Data
     func send<T: Decodable>(request: NetworkRequest) async throws -> T
 }
 
-actor DefaultNetworkClient: NetworkClient {
+public actor DefaultNetworkClient: NetworkClient {
     private let session: URLSession
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
 
-    init(
+    public init(
         session: URLSession = URLSession.shared,
         decoder: JSONDecoder = JSONDecoder(),
         encoder: JSONEncoder = JSONEncoder()
@@ -28,7 +28,7 @@ actor DefaultNetworkClient: NetworkClient {
         self.encoder = encoder
     }
 
-    func send(request: NetworkRequest) async throws -> Data {
+    public func send(request: NetworkRequest) async throws -> Data {
         let urlRequest = try create(request: request)
         let (data, response) = try await session.data(for: urlRequest)
         guard let response = response as? HTTPURLResponse else {
@@ -40,7 +40,7 @@ actor DefaultNetworkClient: NetworkClient {
         return data
     }
 
-    func send<T: Decodable>(request: NetworkRequest) async throws -> T {
+    public func send<T: Decodable>(request: NetworkRequest) async throws -> T {
         let data = try await send(request: request)
         return try await parse(data: data)
     }

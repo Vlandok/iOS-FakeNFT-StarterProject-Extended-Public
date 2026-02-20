@@ -94,12 +94,17 @@ final class BasketItemCell: UITableViewCell {
         nameLabel.text = item.name
         priceLabel.text = String(format: "%.2f ETH", item.price)
         
-        // Загружаем картинку из Assets по паттерну nft1, nft2, nft3
-        let imageName = "nft\(item.id)"
-        if let localImage = UIImage(named: imageName) {
-            nftImageView.image = localImage
+        // Загружаем первую картинку из массива URL с помощью Kingfisher
+        if let firstImageURL = item.images.first {
+            nftImageView.kf.setImage(
+                with: firstImageURL,
+                placeholder: UIImage(systemName: "photo"),
+                options: [
+                    .transition(.fade(0.2)),
+                    .cacheOriginalImage
+                ]
+            )
         } else {
-            // Placeholder если картинка не найдена
             nftImageView.image = UIImage(systemName: "photo")
         }
         

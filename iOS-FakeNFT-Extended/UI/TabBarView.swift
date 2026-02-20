@@ -24,7 +24,7 @@ struct TabBarView: View {
                 }
             
             // Корзина
-            CartPlaceholderView()
+            BasketTabView()
                 .tabItem {
                     Label(
                         NSLocalizedString("Tab.cart", comment: ""),
@@ -46,13 +46,6 @@ struct TabBarView: View {
 }
 
 // MARK: - Placeholder Views
-
-struct CartPlaceholderView: View {
-    var body: some View {
-        Text("Корзина")
-            .font(.title)
-    }
-}
 
 struct StatisticsPlaceholderView: View {
     var body: some View {

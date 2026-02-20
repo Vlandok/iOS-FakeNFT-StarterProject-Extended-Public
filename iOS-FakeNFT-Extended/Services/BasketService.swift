@@ -1,6 +1,6 @@
 import Foundation
 
-protocol BasketService {
+public protocol BasketService {
     func loadBasket() async throws -> Basket
     func updateBasket(nftIds: [String]) async throws -> Basket
     func loadNftDetails(ids: [String]) async throws -> [BasketItem]

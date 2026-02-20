@@ -1,14 +1,11 @@
 // MARK: - Tab Bar
 "Tab.profile" = "Профиль";
 "Tab.catalog" = "Каталог";
-<<<<<<< HEAD
 "Tab.cart" = "Корзина";
+"Tab.basket" = "Корзина";
 "Tab.statistics" = "Статистика";
 
 // MARK: - Catalog
-=======
-"Tab.basket" = "Корзина";
->>>>>>> 4091c53 (feat(basket): Реализован функционал эпика корзины с мок данными)
 "Catalog.openNft" = "Открыть Nft";
 
 // MARK: - Profile
