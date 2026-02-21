@@ -6,6 +6,10 @@ struct NFTGridCell: View {
     let onFavoriteTap: () -> Void
     let onAddToCartTap: () -> Void
     
+    private var formattedPrice: String {
+        String(format: "%.2f ETH", item.price).replacingOccurrences(of: ".", with: ",")
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             
@@ -33,8 +37,11 @@ struct NFTGridCell: View {
             Text(item.name)
                 .font(.system(size: 17, weight: .bold))
                 .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.trailing, 30)
             
-            Text("\(item.price) ETH")
+            Text(formattedPrice)
                 .font(.system(size: 10, weight: .medium))
             
             Spacer()
