@@ -47,3 +47,10 @@
 "Error.unknown" = "Произошла неизвестная ошибка";
 "Error.repeat" = "Повторить";
 "Error.title" = "Ошибка";
+
+// MARK: - Catalog
+"Catalog.sortTitle" = "Сортировка";
+"Catalog.sortByName" = "По названию";
+"Catalog.sortByNftCount" = "По количеству NFT";
+"Catalog.cancelButton" = "Отмена";
+"Collection.author" = "Автор коллекции:";
