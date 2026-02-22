@@ -1,12 +1,4 @@
-import Foundation
-import UIKit
-
-protocol BasketPresenter {
-    func viewDidLoad()
-    func deleteItem(at index: Int)
-    func sortTapped()
-    func payTapped()
-}
+import SwiftUI
 
 enum BasketState {
     case initial, loading, failed(Error), data([BasketItem]), empty
@@ -18,139 +10,101 @@ enum SortType: String {
     case byName = "Basket.sort.name"
 }
 
-final class BasketPresenterImpl: BasketPresenter {
-    weak var view: BasketView?
-    private let service: BasketService
-    private let router: BasketRouter
+class BasketViewModel: ObservableObject {
+    @Published var items: [BasketItem] = []
+    @Published var isLoading = false
+    @Published var showSortOptions = false
+    @Published var itemToDelete: BasketItem?
+    @Published var errorMessage: String?
     
-    private var items: [BasketItem] = []
+    let service: BasketService
     private var currentSort: SortType = .byName
-    private var state = BasketState.initial {
-        didSet {
-            DispatchQueue.main.async { [weak self] in
-                self?.stateDidChange()
-            }
-        }
+    
+    var totalPrice: String {
+        let total = items.reduce(0.0) { $0 + $1.price }
+        return String(format: "%.2f ETH", total)
     }
     
-    init(service: BasketService, router: BasketRouter) {
+    init(service: BasketService) {
         self.service = service
-        self.router = router
         loadSavedSort()
-        setupNotifications()
     }
     
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
-    
-    private func setupNotifications() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handlePaymentSuccess),
-            name: NSNotification.Name("PaymentSuccess"),
-            object: nil
-        )
-    }
-    
-    @objc private func handlePaymentSuccess() {
-        // Очищаем корзину на сервере
-        service.updateBasket(nftIds: []) { [weak self] result in
-            DispatchQueue.main.async {
-                self?.items.removeAll()
-                self?.state = .empty
-            }
+    func loadBasket() {
+        print("📦 [BasketViewModel] ========== START loadBasket ==========")
+        DispatchQueue.main.async { [weak self] in
+            self?.isLoading = true
+            print("📦 [BasketViewModel] Set isLoading = true")
         }
-    }
-    
-    func viewDidLoad() {
-        state = .loading
-    }
-    
-    func deleteItem(at index: Int) {
-        guard index < items.count else { return }
-        let item = items[index]
-        router.showDeleteConfirmation(item: item) { [weak self] in
-            self?.confirmDelete(at: index)
-        }
-    }
-    
-    func sortTapped() {
-        router.showSortOptions(current: currentSort) { [weak self] sortType in
-            self?.applySorting(sortType)
-        }
-    }
-    
-    func payTapped() {
-        router.openPayment(items: items)
-    }
-    
-    private func stateDidChange() {
-        switch state {
-        case .initial:
-            break
-        case .loading:
-            view?.showLoading()
-            loadBasket()
-        case .data(let items):
-            view?.hideLoading()
-            self.items = items
-            applySorting(currentSort)
-        case .empty:
-            view?.hideLoading()
-            view?.displayEmptyState()
-        case .failed(let error):
-            view?.hideLoading()
-            let errorModel = makeErrorModel(error)
-            view?.showError(errorModel)
-        }
-    }
-    
-    private func loadBasket() {
+        
         service.loadBasket { [weak self] result in
-            guard let self = self else { return }
+            guard let self = self else { 
+                print("📦 [BasketViewModel] ❌ self is nil in loadBasket callback")
+                return 
+            }
             
             switch result {
             case .success(let basket):
+                print("📦 [BasketViewModel] ✅ Basket loaded successfully")
+                print("📦 [BasketViewModel] Basket.nfts count: \(basket.nfts.count)")
+                print("📦 [BasketViewModel] Basket.nfts IDs: \(basket.nfts)")
+                
                 if basket.nfts.isEmpty {
-                    self.state = .empty
+                    DispatchQueue.main.async {
+                        self.items = []
+                        self.isLoading = false
+                        print("📦 [BasketViewModel] Basket is EMPTY - showing empty state")
+                    }
                 } else {
+                    print("📦 [BasketViewModel] Loading NFT details for \(basket.nfts.count) items...")
                     self.service.loadNftDetails(ids: basket.nfts) { [weak self] detailsResult in
-                        switch detailsResult {
-                        case .success(let items):
-                            self?.state = .data(items)
-                        case .failure:
-                            self?.state = .empty
+                        DispatchQueue.main.async {
+                            guard let self = self else { 
+                                print("📦 [BasketViewModel] ❌ self is nil in loadNftDetails callback")
+                                return 
+                            }
+                            self.isLoading = false
+                            
+                            switch detailsResult {
+                            case .success(let items):
+                                print("📦 [BasketViewModel] ✅ Loaded \(items.count) NFT details")
+                                items.forEach { item in
+                                    print("📦 [BasketViewModel]   - \(item.name) (\(item.id))")
+                                }
+                                self.items = items
+                                self.applySorting(self.currentSort)
+                                print("📦 [BasketViewModel] Applied sorting: \(self.currentSort)")
+                            case .failure(let error):
+                                print("📦 [BasketViewModel] ❌ Failed to load NFT details: \(error)")
+                                self.items = []
+                            }
                         }
                     }
                 }
-            case .failure:
-                self.state = .empty
+            case .failure(let error):
+                print("📦 [BasketViewModel] ❌ Failed to load basket: \(error)")
+                DispatchQueue.main.async {
+                    self.items = []
+                    self.isLoading = false
+                }
             }
         }
+        print("📦 [BasketViewModel] ========== END loadBasket (async) ==========")
     }
     
-    private func confirmDelete(at index: Int) {
-        items.remove(at: index)
-        
-        if items.isEmpty {
-            state = .empty
-        } else {
-            updateBasketOnServer()
-            view?.displayItems(items)
-            updateTotalPrice()
-        }
+    func confirmDelete(_ item: BasketItem) {
+        items.removeAll { $0.id == item.id }
+        updateBasketOnServer()
+        itemToDelete = nil
     }
     
-    private func updateBasketOnServer() {
-        let ids = items.map { $0.id }
-        service.updateBasket(nftIds: ids) { _ in }
+    func sortBy(_ sortType: SortType) {
+        currentSort = sortType
+        saveSortType(sortType)
+        applySorting(sortType)
     }
     
     private func applySorting(_ sortType: SortType) {
-        currentSort = sortType
-        saveSortType(sortType)
-        
         switch sortType {
         case .byPrice:
             items.sort { $0.price < $1.price }
@@ -159,15 +113,11 @@ final class BasketPresenterImpl: BasketPresenter {
         case .byName:
             items.sort { $0.name < $1.name }
         }
-        
-        view?.displayItems(items)
-        updateTotalPrice()
     }
     
-    private func updateTotalPrice() {
-        let total = items.reduce(0.0) { $0 + $1.price }
-        let formatted = String(format: "%.2f ETH", total)
-        view?.updateTotalPrice(formatted)
+    private func updateBasketOnServer() {
+        let ids = items.map { $0.id }
+        service.updateBasket(nftIds: ids) { _ in }
     }
     
     private func saveSortType(_ sortType: SortType) {
@@ -180,19 +130,6 @@ final class BasketPresenterImpl: BasketPresenter {
             currentSort = sortType
         }
     }
-    
-    private func makeErrorModel(_ error: Error) -> ErrorModel {
-        let message: String
-        switch error {
-        case is NetworkClientError:
-            message = NSLocalizedString("Error.network", comment: "")
-        default:
-            message = NSLocalizedString("Error.unknown", comment: "")
-        }
-        
-        let actionText = NSLocalizedString("Error.repeat", comment: "")
-        return ErrorModel(message: message, actionText: actionText) { [weak self] in
-            self?.state = .loading
-        }
-    }
 }
+
+extension BasketItem: Identifiable {}

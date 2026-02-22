@@ -1,216 +1,176 @@
-import UIKit
+import SwiftUI
 
-protocol BasketView: AnyObject, ErrorView, LoadingView {
-    func displayItems(_ items: [BasketItem])
-    func displayEmptyState()
-    func updateTotalPrice(_ price: String)
-}
-
-final class BasketViewController: UIViewController {
-    private let presenter: BasketPresenter
+struct BasketSwiftUIView: View {
+    @StateObject private var viewModel: BasketViewModel
+    @State private var refreshID = UUID()
     
-    private lazy var tableView: UITableView = {
-        let table = UITableView()
-        table.register(BasketItemCell.self, forCellReuseIdentifier: BasketItemCell.reuseIdentifier)
-        table.dataSource = self
-        table.delegate = self
-        table.separatorStyle = .none
-        return table
-    }()
-    
-    private lazy var emptyStateView: UIView = {
-        let view = UIView()
-        
-        let label = UILabel()
-        label.text = NSLocalizedString("Basket.empty", comment: "")
-        label.textAlignment = .center
-        label.font = UIFont(name: "SFProText-Bold", size: 17) ?? .systemFont(ofSize: 17, weight: .bold)
-        label.translatesAutoresizingMaskIntoConstraints = false
-        
-        view.addSubview(label)
-        
-        NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
-        ])
-        view.isHidden = true
-        return view
-    }()
-    
-    private lazy var bottomView: UIView = {
-        let view = UIView()
-        view.backgroundColor = UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0) // Светло-серый
-        view.layer.cornerRadius = 12
-        view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
-        return view
-    }()
-    
-    private lazy var nftCountLabel: UILabel = {
-        let label = UILabel()
-        label.font = UIFont(name: "SFProText-Regular", size: 15) ?? .systemFont(ofSize: 15, weight: .regular)
-        label.textColor = .black
-        return label
-    }()
-    
-    private lazy var totalLabel: UILabel = {
-        let label = UILabel()
-        label.font = UIFont(name: "SFProText-Bold", size: 17) ?? .systemFont(ofSize: 17, weight: .bold)
-        label.textColor = UIColor(red: 0.42, green: 0.69, blue: 0.20, alpha: 1.0) // Зеленый
-        return label
-    }()
-    
-    private lazy var payButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setTitle(NSLocalizedString("Basket.pay", comment: ""), for: .normal)
-        button.backgroundColor = .black
-        button.setTitleColor(.white, for: .normal)
-        button.titleLabel?.font = UIFont(name: "SFProText-Bold", size: 17) ?? .systemFont(ofSize: 17, weight: .bold)
-        button.layer.cornerRadius = 16
-        button.addTarget(self, action: #selector(payTapped), for: .touchUpInside)
-        return button
-    }()
-    
-    private lazy var sortButton: UIBarButtonItem = {
-        let button = UIBarButtonItem(
-            image: UIImage(named: "SortIcon"),
-            style: .plain,
-            target: self,
-            action: #selector(sortTapped)
-        )
-        button.tintColor = .black
-        return button
-    }()
-    
-    internal lazy var activityIndicator = UIActivityIndicatorView()
-    private var items: [BasketItem] = []
-    
-    init(presenter: BasketPresenter) {
-        self.presenter = presenter
-        super.init(nibName: nil, bundle: nil)
+    init(service: BasketService) {
+        _viewModel = StateObject(wrappedValue: BasketViewModel(service: service))
     }
     
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupUI()
-        presenter.viewDidLoad()
-    }
-    
-    private func setupUI() {
-        view.backgroundColor = .white
-        // Убираем title
-        navigationItem.rightBarButtonItem = sortButton
-        
-        view.addSubview(tableView)
-        view.addSubview(emptyStateView)
-        view.addSubview(bottomView)
-        view.addSubview(activityIndicator)
-        
-        bottomView.addSubview(nftCountLabel)
-        bottomView.addSubview(totalLabel)
-        bottomView.addSubview(payButton)
-        
-        tableView.translatesAutoresizingMaskIntoConstraints = false
-        emptyStateView.translatesAutoresizingMaskIntoConstraints = false
-        bottomView.translatesAutoresizingMaskIntoConstraints = false
-        nftCountLabel.translatesAutoresizingMaskIntoConstraints = false
-        totalLabel.translatesAutoresizingMaskIntoConstraints = false
-        payButton.translatesAutoresizingMaskIntoConstraints = false
-        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
-        
-        NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: bottomView.topAnchor),
-            
-            emptyStateView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            emptyStateView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            emptyStateView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            emptyStateView.bottomAnchor.constraint(equalTo: bottomView.topAnchor),
-            
-            bottomView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            bottomView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            bottomView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-            bottomView.heightAnchor.constraint(equalToConstant: 76),
-            
-            nftCountLabel.leadingAnchor.constraint(equalTo: bottomView.leadingAnchor, constant: 16),
-            nftCountLabel.centerYAnchor.constraint(equalTo: bottomView.centerYAnchor, constant: -10),
-            
-            totalLabel.leadingAnchor.constraint(equalTo: bottomView.leadingAnchor, constant: 16),
-            totalLabel.topAnchor.constraint(equalTo: nftCountLabel.bottomAnchor, constant: 2),
-            
-            payButton.trailingAnchor.constraint(equalTo: bottomView.trailingAnchor, constant: -16),
-            payButton.centerYAnchor.constraint(equalTo: bottomView.centerYAnchor),
-            payButton.widthAnchor.constraint(equalToConstant: 240),
-            payButton.heightAnchor.constraint(equalToConstant: 60),
-            
-            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
-        ])
-    }
-    
-    @objc private func sortTapped() {
-        presenter.sortTapped()
-    }
-    
-    @objc private func payTapped() {
-        presenter.payTapped()
-    }
-}
-
-extension BasketViewController: BasketView {
-    func displayItems(_ items: [BasketItem]) {
-        self.items = items
-        tableView.isHidden = false
-        emptyStateView.isHidden = true
-        bottomView.isHidden = false
-        navigationItem.rightBarButtonItem = sortButton
-        
-        // Обновляем количество NFT
-        nftCountLabel.text = "\(items.count) NFT"
-        
-        tableView.reloadData()
-    }
-    
-    func displayEmptyState() {
-        tableView.isHidden = true
-        emptyStateView.isHidden = false
-        bottomView.isHidden = true
-        navigationItem.rightBarButtonItem = nil
-    }
-    
-    func updateTotalPrice(_ price: String) {
-        totalLabel.text = price
-    }
-}
-
-extension BasketViewController: UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        items.count
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(
-            withIdentifier: BasketItemCell.reuseIdentifier,
-            for: indexPath
-        ) as? BasketItemCell else {
-            return UITableViewCell()
+    var body: some View {
+        NavigationView {
+            ZStack {
+                if viewModel.items.isEmpty && !viewModel.isLoading {
+                    emptyStateView
+                } else {
+                    basketContentView
+                }
+                
+                if viewModel.isLoading {
+                    ProgressView()
+                }
+            }
+            .id(refreshID)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if !viewModel.items.isEmpty {
+                        Button(action: { viewModel.showSortOptions = true }) {
+                            Image("SortIcon")
+                                .renderingMode(.template)
+                                .foregroundColor(.black)
+                        }
+                    }
+                }
+            }
+            .confirmationDialog("Сортировка", isPresented: $viewModel.showSortOptions) {
+                Button(NSLocalizedString("Basket.sort.price", comment: "")) {
+                    viewModel.sortBy(.byPrice)
+                }
+                Button(NSLocalizedString("Basket.sort.rating", comment: "")) {
+                    viewModel.sortBy(.byRating)
+                }
+                Button(NSLocalizedString("Basket.sort.name", comment: "")) {
+                    viewModel.sortBy(.byName)
+                }
+                Button(NSLocalizedString("Basket.sort.cancel", comment: ""), role: .cancel) {}
+            }
+            .fullScreenCover(item: $viewModel.itemToDelete) { item in
+                DeleteConfirmationSwiftUIView(item: item) {
+                    viewModel.confirmDelete(item)
+                }
+                .background(BackgroundClearView())
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RefreshBasket"))) { _ in
+                print("🎬 [BasketView] RefreshBasket notification received")
+                refreshID = UUID()
+                print("🎬 [BasketView] New refreshID: \(refreshID)")
+                viewModel.loadBasket()
+            }
+            .toolbar(.visible, for: .tabBar)
         }
-        
-        let item = items[indexPath.row]
-        cell.configure(with: item) { [weak self] in
-            self?.presenter.deleteItem(at: indexPath.row)
+    }
+    
+    private var emptyStateView: some View {
+        VStack {
+            Spacer()
+            Text(NSLocalizedString("Basket.empty", comment: ""))
+                .font(.custom("SFProText-Bold", size: 17))
+            Spacer()
         }
-        return cell
+    }
+    
+    private var basketContentView: some View {
+        VStack(spacing: 0) {
+            List {
+                ForEach(viewModel.items) { item in
+                    BasketItemRow(item: item) {
+                        viewModel.itemToDelete = item
+                    }
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets())
+                }
+            }
+            .listStyle(.plain)
+            
+            bottomPanel
+        }
+    }
+    
+    private var bottomPanel: some View {
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(viewModel.items.count) NFT")
+                        .font(.custom("SFProText-Regular", size: 15))
+                        .foregroundColor(.black)
+                    
+                    Text(viewModel.totalPrice)
+                        .font(.custom("SFProText-Bold", size: 17))
+                        .foregroundColor(Color(red: 0.42, green: 0.69, blue: 0.20))
+                }
+                
+                Spacer()
+                
+                NavigationLink(destination: PaymentSwiftUIView(items: viewModel.items, service: viewModel.service)) {
+                    Text(NSLocalizedString("Basket.pay", comment: ""))
+                        .font(.custom("SFProText-Bold", size: 17))
+                        .foregroundColor(.white)
+                        .frame(width: 240, height: 60)
+                        .background(Color.black)
+                        .cornerRadius(16)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .frame(height: 76)
+            .background(Color(red: 0.98, green: 0.98, blue: 0.98))
+        }
     }
 }
 
-extension BasketViewController: UITableViewDelegate {
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        140
+struct BasketItemRow: View {
+    let item: BasketItem
+    let onDelete: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 20) {
+            AsyncImage(url: item.images.first) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Image(systemName: "photo")
+                    .foregroundColor(.gray)
+            }
+            .frame(width: 108, height: 108)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.name)
+                    .font(.custom("SFProText-Bold", size: 17))
+                    .foregroundColor(.black)
+                
+                HStack(spacing: 2) {
+                    ForEach(0..<5) { index in
+                        Image(systemName: index < item.rating ? "star.fill" : "star")
+                            .font(.system(size: 12))
+                            .foregroundColor(.yellow)
+                    }
+                }
+                
+                Spacer()
+                
+                Text("Цена")
+                    .font(.custom("SFProText-Regular", size: 13))
+                    .foregroundColor(.black)
+                
+                Text(String(format: "%.2f ETH", item.price))
+                    .font(.custom("SFProText-Bold", size: 17))
+                    .foregroundColor(.black)
+            }
+            
+            Spacer()
+            
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .foregroundColor(.black)
+                    .frame(width: 40, height: 40)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .frame(height: 140)
     }
 }

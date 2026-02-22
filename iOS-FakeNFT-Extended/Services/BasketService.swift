@@ -16,43 +16,86 @@ final class BasketServiceImpl: BasketService {
     }
     
     func loadBasket(completion: @escaping (Result<Basket, Error>) -> Void) {
+        print("🌐 [BasketService] ========== START loadBasket ==========")
         queue.async { [weak self] in
-            guard let self = self else { return }
+            guard let self = self else { 
+                print("🌐 [BasketService] ❌ self is nil")
+                return 
+            }
             let request = BasketRequest()
+            print("🌐 [BasketService] Created BasketRequest")
+            print("🌐 [BasketService] Endpoint: \(request.endpoint?.absoluteString ?? "nil")")
+            
+            // Используем семафор для синхронного ожидания async/await
+            let semaphore = DispatchSemaphore(value: 0)
+            var result: Result<Basket, Error>?
             
             Task {
                 do {
+                    print("🌐 [BasketService] Sending request...")
                     let basket: Basket = try await self.networkClient.send(request: request)
-                    DispatchQueue.main.async {
-                        completion(.success(basket))
-                    }
+                    print("🌐 [BasketService] ✅ Response received")
+                    print("🌐 [BasketService] Basket.nfts: \(basket.nfts)")
+                    result = .success(basket)
                 } catch {
-                    DispatchQueue.main.async {
-                        completion(.failure(error))
-                    }
+                    print("🌐 [BasketService] ❌ Request failed: \(error)")
+                    result = .failure(error)
+                }
+                semaphore.signal()
+            }
+            
+            semaphore.wait()
+            
+            if let result = result {
+                DispatchQueue.main.async {
+                    completion(result)
                 }
             }
         }
+        print("🌐 [BasketService] ========== END loadBasket (async) ==========")
     }
     
     func updateBasket(nftIds: [String], completion: @escaping (Result<Basket, Error>) -> Void) {
+        print("🌐 [BasketService] ========== START updateBasket ==========")
+        print("🌐 [BasketService] Updating basket with \(nftIds.count) items: \(nftIds)")
         queue.async { [weak self] in
-            guard let self = self else { return }
+            guard let self = self else { 
+                print("🌐 [BasketService] ❌ self is nil in updateBasket")
+                return 
+            }
             let request = UpdateBasketRequest(nftIds: nftIds)
+            print("🌐 [BasketService] Created UpdateBasketRequest")
+            print("🌐 [BasketService] Endpoint: \(request.endpoint?.absoluteString ?? "nil")")
+            print("🌐 [BasketService] Method: \(request.httpMethod.rawValue)")
+            print("🌐 [BasketService] ContentType: \(request.contentType)")
+            
+            // Используем семафор для синхронного ожидания async/await
+            let semaphore = DispatchSemaphore(value: 0)
+            var result: Result<Basket, Error>?
             
             Task {
                 do {
+                    print("🌐 [BasketService] Sending update request...")
                     let basket: Basket = try await self.networkClient.send(request: request)
-                    DispatchQueue.main.async {
-                        completion(.success(basket))
-                    }
+                    print("🌐 [BasketService] ✅ Update response received")
+                    print("🌐 [BasketService] Updated basket.nfts: \(basket.nfts)")
+                    result = .success(basket)
                 } catch {
-                    DispatchQueue.main.async {
-                        completion(.failure(error))
-                    }
+                    print("🌐 [BasketService] ❌ Update request failed: \(error)")
+                    result = .failure(error)
+                }
+                semaphore.signal()
+            }
+            
+            semaphore.wait()
+            
+            if let result = result {
+                DispatchQueue.main.async {
+                    completion(result)
                 }
             }
         }
+        print("🌐 [BasketService] ========== END updateBasket (async) ==========")
     }
     
     func loadNftDetails(ids: [String], completion: @escaping (Result<[BasketItem], Error>) -> Void) {
@@ -70,6 +113,10 @@ final class BasketServiceImpl: BasketService {
                 }
                 
                 let request = NFTByIdRequest(nftId: id)
+                
+                // Используем семафор для синхронного ожидания async/await
+                let semaphore = DispatchSemaphore(value: 0)
+                
                 Task {
                     do {
                         let nft: NFTNetworkModel = try await self.networkClient.send(request: request)
@@ -92,8 +139,11 @@ final class BasketServiceImpl: BasketService {
                             loadError = error
                         }
                     }
-                    group.leave()
+                    semaphore.signal()
                 }
+                
+                semaphore.wait()
+                group.leave()
             }
         }
         
@@ -111,16 +161,25 @@ final class BasketServiceImpl: BasketService {
             guard let self = self else { return }
             let request = CurrenciesRequest()
             
+            // Используем семафор для синхронного ожидания async/await
+            let semaphore = DispatchSemaphore(value: 0)
+            var result: Result<[Currency], Error>?
+            
             Task {
                 do {
                     let currencies: [Currency] = try await self.networkClient.send(request: request)
-                    DispatchQueue.main.async {
-                        completion(.success(currencies))
-                    }
+                    result = .success(currencies)
                 } catch {
-                    DispatchQueue.main.async {
-                        completion(.failure(error))
-                    }
+                    result = .failure(error)
+                }
+                semaphore.signal()
+            }
+            
+            semaphore.wait()
+            
+            if let result = result {
+                DispatchQueue.main.async {
+                    completion(result)
                 }
             }
         }

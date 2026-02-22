@@ -1,11 +1,10 @@
 import Foundation
 
-public protocol NftStorage: AnyObject {
+protocol NftStorage: AnyObject {
     func saveNft(_ nft: Nft) async
     func getNft(with id: String) async -> Nft?
 }
 
-// Пример простого актора, который сохраняет данные из сети
 public actor NftStorageImpl: NftStorage {
     private var storage: [String: Nft] = [:]
     
