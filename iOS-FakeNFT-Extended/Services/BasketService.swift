@@ -1,58 +1,128 @@
 import Foundation
 
 public protocol BasketService {
-    func loadBasket() async throws -> Basket
-    func updateBasket(nftIds: [String]) async throws -> Basket
-    func loadNftDetails(ids: [String]) async throws -> [BasketItem]
-    func loadCurrencies() async throws -> [Currency]
+    func loadBasket(completion: @escaping (Result<Basket, Error>) -> Void)
+    func updateBasket(nftIds: [String], completion: @escaping (Result<Basket, Error>) -> Void)
+    func loadNftDetails(ids: [String], completion: @escaping (Result<[BasketItem], Error>) -> Void)
+    func loadCurrencies(completion: @escaping (Result<[Currency], Error>) -> Void)
 }
 
-@MainActor
 final class BasketServiceImpl: BasketService {
     private let networkClient: NetworkClient
+    private let queue = DispatchQueue(label: "com.fakenft.basketService", qos: .userInitiated)
     
     init(networkClient: NetworkClient) {
         self.networkClient = networkClient
     }
     
-    func loadBasket() async throws -> Basket {
-        let request = BasketRequest()
-        return try await networkClient.send(request: request)
-    }
-    
-    func updateBasket(nftIds: [String]) async throws -> Basket {
-        let request = UpdateBasketRequest(nftIds: nftIds)
-        return try await networkClient.send(request: request)
-    }
-    
-    func loadNftDetails(ids: [String]) async throws -> [BasketItem] {
-        try await withThrowingTaskGroup(of: BasketItem?.self) { group in
-            for id in ids {
-                group.addTask {
-                    let request = NFTRequest(id: id)
-                    let nft: Nft = try await self.networkClient.send(request: request)
-                    return BasketItem(
-                        id: nft.id,
-                        name: "NFT #\(nft.id)",
-                        rating: Int.random(in: 1...5),
-                        price: Double.random(in: 0.1...10.0),
-                        images: nft.images
-                    )
-                }
-            }
+    func loadBasket(completion: @escaping (Result<Basket, Error>) -> Void) {
+        queue.async { [weak self] in
+            guard let self = self else { return }
+            let request = BasketRequest()
             
-            var items: [BasketItem] = []
-            for try await item in group {
-                if let item = item {
-                    items.append(item)
+            Task {
+                do {
+                    let basket: Basket = try await self.networkClient.send(request: request)
+                    DispatchQueue.main.async {
+                        completion(.success(basket))
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
                 }
             }
-            return items
         }
     }
     
-    func loadCurrencies() async throws -> [Currency] {
-        let request = CurrenciesRequest()
-        return try await networkClient.send(request: request)
+    func updateBasket(nftIds: [String], completion: @escaping (Result<Basket, Error>) -> Void) {
+        queue.async { [weak self] in
+            guard let self = self else { return }
+            let request = UpdateBasketRequest(nftIds: nftIds)
+            
+            Task {
+                do {
+                    let basket: Basket = try await self.networkClient.send(request: request)
+                    DispatchQueue.main.async {
+                        completion(.success(basket))
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
+                }
+            }
+        }
+    }
+    
+    func loadNftDetails(ids: [String], completion: @escaping (Result<[BasketItem], Error>) -> Void) {
+        let group = DispatchGroup()
+        let resultQueue = DispatchQueue(label: "com.fakenft.nftDetails", attributes: .concurrent)
+        var items: [BasketItem] = []
+        var loadError: Error?
+        
+        for id in ids {
+            group.enter()
+            queue.async { [weak self] in
+                guard let self = self else {
+                    group.leave()
+                    return
+                }
+                
+                let request = NFTByIdRequest(nftId: id)
+                Task {
+                    do {
+                        let nft: NFTNetworkModel = try await self.networkClient.send(request: request)
+                        
+                        // Конвертируем строковые URL в URL объекты
+                        let imageUrls = nft.images.compactMap { URL(string: $0) }
+                        
+                        let item = BasketItem(
+                            id: nft.id,
+                            name: nft.name,
+                            rating: nft.rating,
+                            price: nft.price,
+                            images: imageUrls
+                        )
+                        resultQueue.async(flags: .barrier) {
+                            items.append(item)
+                        }
+                    } catch {
+                        resultQueue.async(flags: .barrier) {
+                            loadError = error
+                        }
+                    }
+                    group.leave()
+                }
+            }
+        }
+        
+        group.notify(queue: .main) {
+            if let error = loadError {
+                completion(.failure(error))
+            } else {
+                completion(.success(items))
+            }
+        }
+    }
+    
+    func loadCurrencies(completion: @escaping (Result<[Currency], Error>) -> Void) {
+        queue.async { [weak self] in
+            guard let self = self else { return }
+            let request = CurrenciesRequest()
+            
+            Task {
+                do {
+                    let currencies: [Currency] = try await self.networkClient.send(request: request)
+                    DispatchQueue.main.async {
+                        completion(.success(currencies))
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
+                }
+            }
+        }
     }
 }

@@ -1,7 +1,6 @@
 import UIKit
 
 final class PaymentAssembly {
-    @MainActor
     func build(items: [BasketItem]) -> UIViewController {
         let networkClient = DefaultNetworkClient()
         let service = BasketServiceImpl(networkClient: networkClient)

@@ -15,19 +15,22 @@ final class CurrencyCell: UICollectionViewCell {
     private lazy var iconImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFit
+        imageView.layer.cornerRadius = 6
+        imageView.clipsToBounds = true
         return imageView
     }()
     
     private lazy var titleLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 13)
+        label.font = .systemFont(ofSize: 13, weight: .regular)
+        label.textColor = .black
         return label
     }()
     
     private lazy var nameLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 11)
-        label.textColor = .systemGreen
+        label.font = .systemFont(ofSize: 13, weight: .regular)
+        label.textColor = UIColor(red: 0.42, green: 0.69, blue: 0.20, alpha: 1.0)
         return label
     }()
     
@@ -59,15 +62,15 @@ final class CurrencyCell: UICollectionViewCell {
             
             iconImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 12),
             iconImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
-            iconImageView.widthAnchor.constraint(equalToConstant: 36),
-            iconImageView.heightAnchor.constraint(equalToConstant: 36),
+            iconImageView.widthAnchor.constraint(equalToConstant: 40),
+            iconImageView.heightAnchor.constraint(equalToConstant: 40),
             
-            titleLabel.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 4),
-            titleLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 5),
+            titleLabel.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 8),
+            titleLabel.topAnchor.constraint(equalTo: iconImageView.topAnchor, constant: 2),
             titleLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -12),
             
             nameLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            nameLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 2),
+            nameLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
             nameLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor)
         ])
     }
@@ -86,8 +89,14 @@ final class CurrencyCell: UICollectionViewCell {
             iconImageView.kf.setImage(with: currency.image)
         }
         
-        containerView.layer.borderColor = isSelected ? UIColor.black.cgColor : UIColor.systemGray5.cgColor
-        containerView.layer.borderWidth = isSelected ? 2 : 1
-        containerView.backgroundColor = isSelected ? UIColor.systemGray6 : .white
+        if isSelected {
+            containerView.layer.borderColor = UIColor.black.cgColor
+            containerView.layer.borderWidth = 1
+            containerView.backgroundColor = UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0)
+        } else {
+            containerView.layer.borderColor = UIColor.clear.cgColor
+            containerView.layer.borderWidth = 0
+            containerView.backgroundColor = UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0)
+        }
     }
 }

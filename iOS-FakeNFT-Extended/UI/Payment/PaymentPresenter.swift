@@ -1,6 +1,5 @@
 import Foundation
 
-@MainActor
 protocol PaymentPresenter {
     func viewDidLoad()
     func agreementTapped()
@@ -19,7 +18,9 @@ final class PaymentPresenterImpl: PaymentPresenter {
     
     private var state = PaymentState.initial {
         didSet {
-            Task { await stateDidChange() }
+            DispatchQueue.main.async { [weak self] in
+                self?.stateDidChange()
+            }
         }
     }
     
@@ -38,34 +39,31 @@ final class PaymentPresenterImpl: PaymentPresenter {
     }
     
     func payWithCurrency(_ currency: Currency) {
-        view?.showPaymentProgress()
+        DispatchQueue.main.async { [weak self] in
+            self?.view?.showPaymentProgress()
+        }
         
-        Task {
-            do {
-                // Имитация процесса оплаты
-                try await Task.sleep(nanoseconds: 2_000_000_000)
-                
-                // Пытаемся очистить корзину на сервере, но игнорируем ошибку
-                _ = try? await service.updateBasket(nftIds: [])
-                
-                view?.hidePaymentProgress()
-                router.openSuccess()
-            } catch {
-                view?.hidePaymentProgress()
-                router.showPaymentError { [weak self] in
-                    self?.payWithCurrency(currency)
-                }
+        // Имитация процесса оплаты
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            guard let self = self else { return }
+            
+            // Пытаемся очистить корзину на сервере
+            self.service.updateBasket(nftIds: []) { _ in }
+            
+            DispatchQueue.main.async {
+                self.view?.hidePaymentProgress()
+                self.router.openSuccess()
             }
         }
     }
     
-    private func stateDidChange() async {
+    private func stateDidChange() {
         switch state {
         case .initial:
             break
         case .loading:
             view?.showLoading()
-            await loadCurrencies()
+            loadCurrencies()
         case .data(let currencies):
             view?.hideLoading()
             view?.displayCurrencies(currencies)
@@ -76,39 +74,25 @@ final class PaymentPresenterImpl: PaymentPresenter {
         }
     }
     
-    private func loadCurrencies() async {
-        do {
-            let currencies = try await service.loadCurrencies()
-            state = .data(currencies)
-        } catch {
-            // Временно: создаем тестовые валюты (картинки загрузятся из Assets по названию)
-            let mockCurrencies = [
-                Currency(
-                    id: "1",
-                    title: "BTC",
-                    name: "Bitcoin",
-                    image: URL(string: "https://placeholder.com/bitcoin")!
-                ),
-                Currency(
-                    id: "2",
-                    title: "ETH",
-                    name: "Ethereum",
-                    image: URL(string: "https://placeholder.com/ethereum")!
-                ),
-                Currency(
-                    id: "3",
-                    title: "USDT",
-                    name: "Tether",
-                    image: URL(string: "https://placeholder.com/tether")!
-                ),
-                Currency(
-                    id: "4",
-                    title: "DOGE",
-                    name: "Dogecoin",
-                    image: URL(string: "https://placeholder.com/dogecoin")!
-                )
-            ]
-            state = .data(mockCurrencies)
+    private func loadCurrencies() {
+        service.loadCurrencies { [weak self] result in
+            guard let self = self else { return }
+            
+            switch result {
+            case .success(let currencies):
+                self.state = .data(currencies)
+            case .success(let currencies):
+                // Сортируем валюты в правильном порядке
+                let order = ["Bitcoin", "Dogecoin", "Tether", "Apecoin", "Solana", "Ethereum", "Cardano", "Shiba Inu"]
+                let sortedCurrencies = currencies.sorted { currency1, currency2 in
+                    let index1 = order.firstIndex(of: currency1.title) ?? Int.max
+                    let index2 = order.firstIndex(of: currency2.title) ?? Int.max
+                    return index1 < index2
+                }
+                self.state = .data(sortedCurrencies)
+            case .failure:
+                self.state = .data([])
+            }
         }
     }
     

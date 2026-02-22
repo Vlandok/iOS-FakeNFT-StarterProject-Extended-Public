@@ -22,22 +22,43 @@ final class PaymentViewController: UIViewController {
         return cv
     }()
     
-    private lazy var agreementButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setTitle(NSLocalizedString("Payment.agreement", comment: ""), for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 13)
-        button.addTarget(self, action: #selector(agreementTapped), for: .touchUpInside)
-        return button
+    private lazy var agreementLabel: UILabel = {
+        let label = UILabel()
+        label.numberOfLines = 0
+        
+        let text = "Совершая покупку, вы соглашаетесь с условиями"
+        let linkText = "Пользовательского соглашения"
+        let fullText = "\(text) \(linkText)"
+        
+        let attributedString = NSMutableAttributedString(string: fullText)
+        attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: 13), range: NSRange(location: 0, length: fullText.count))
+        attributedString.addAttribute(.foregroundColor, value: UIColor.black, range: NSRange(location: 0, length: text.count))
+        attributedString.addAttribute(.foregroundColor, value: UIColor.systemBlue, range: NSRange(location: text.count + 1, length: linkText.count))
+        
+        label.attributedText = attributedString
+        label.isUserInteractionEnabled = true
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(agreementTapped))
+        label.addGestureRecognizer(tapGesture)
+        
+        return label
+    }()
+    
+    private lazy var bottomContainerView: UIView = {
+        let view = UIView()
+        view.backgroundColor = UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0)
+        return view
     }()
     
     private lazy var payButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle(NSLocalizedString("Payment.pay", comment: ""), for: .normal)
+        button.setTitle("Оплатить", for: .normal)
         button.backgroundColor = .black
         button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
         button.layer.cornerRadius = 16
         button.addTarget(self, action: #selector(payTapped), for: .touchUpInside)
         button.isEnabled = false
+        button.alpha = 0.5
         return button
     }()
     
@@ -79,18 +100,42 @@ final class PaymentViewController: UIViewController {
         presenter.viewDidLoad()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Скрываем таббар
+        tabBarController?.tabBar.isHidden = true
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // Показываем таббар обратно
+        tabBarController?.tabBar.isHidden = false
+    }
+    
     private func setupUI() {
         view.backgroundColor = .white
-        title = NSLocalizedString("Payment.title", comment: "")
+        title = "Выберите способ оплаты"
+        
+        // Добавляем кнопку назад
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            image: UIImage(named: "Light"),
+            style: .plain,
+            target: self,
+            action: #selector(backTapped)
+        )
+        navigationItem.leftBarButtonItem?.tintColor = .black
         
         view.addSubview(collectionView)
-        view.addSubview(agreementButton)
-        view.addSubview(payButton)
+        view.addSubview(bottomContainerView)
         view.addSubview(activityIndicator)
         view.addSubview(progressHUD)
         
+        bottomContainerView.addSubview(agreementLabel)
+        bottomContainerView.addSubview(payButton)
+        
         collectionView.translatesAutoresizingMaskIntoConstraints = false
-        agreementButton.translatesAutoresizingMaskIntoConstraints = false
+        bottomContainerView.translatesAutoresizingMaskIntoConstraints = false
+        agreementLabel.translatesAutoresizingMaskIntoConstraints = false
         payButton.translatesAutoresizingMaskIntoConstraints = false
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
         progressHUD.translatesAutoresizingMaskIntoConstraints = false
@@ -99,16 +144,21 @@ final class PaymentViewController: UIViewController {
             collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            collectionView.bottomAnchor.constraint(equalTo: agreementButton.topAnchor, constant: -16),
+            collectionView.bottomAnchor.constraint(equalTo: bottomContainerView.topAnchor, constant: -16),
             
-            agreementButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            agreementButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            agreementButton.bottomAnchor.constraint(equalTo: payButton.topAnchor, constant: -16),
+            bottomContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            bottomContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            bottomContainerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             
-            payButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            payButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            payButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            agreementLabel.topAnchor.constraint(equalTo: bottomContainerView.topAnchor, constant: 16),
+            agreementLabel.leadingAnchor.constraint(equalTo: bottomContainerView.leadingAnchor, constant: 16),
+            agreementLabel.trailingAnchor.constraint(equalTo: bottomContainerView.trailingAnchor, constant: -16),
+            
+            payButton.topAnchor.constraint(equalTo: agreementLabel.bottomAnchor, constant: 16),
+            payButton.leadingAnchor.constraint(equalTo: bottomContainerView.leadingAnchor, constant: 16),
+            payButton.trailingAnchor.constraint(equalTo: bottomContainerView.trailingAnchor, constant: -16),
             payButton.heightAnchor.constraint(equalToConstant: 60),
+            payButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
@@ -118,6 +168,10 @@ final class PaymentViewController: UIViewController {
             progressHUD.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             progressHUD.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+    }
+    
+    @objc private func backTapped() {
+        navigationController?.popViewController(animated: true)
     }
     
     @objc private func agreementTapped() {
@@ -177,6 +231,7 @@ extension PaymentViewController: UICollectionViewDelegate {
         let previousIndex = selectedIndex
         selectedIndex = indexPath
         payButton.isEnabled = true
+        payButton.alpha = 1.0
         
         var indexesToReload = [indexPath]
         if let previous = previousIndex {
@@ -188,7 +243,8 @@ extension PaymentViewController: UICollectionViewDelegate {
 
 extension PaymentViewController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let width = (collectionView.bounds.width - 7) / 2
-        return CGSize(width: width, height: 76)
+        let width: CGFloat = 168
+        let height: CGFloat = 48
+        return CGSize(width: width, height: height)
     }
 }

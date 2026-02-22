@@ -16,7 +16,7 @@ final class BasketItemCell: UITableViewCell {
     
     private lazy var nameLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 17, weight: .bold)
+        label.font = UIFont(name: "SFProText-Bold", size: 17) ?? .systemFont(ofSize: 17, weight: .bold)
         return label
     }()
     
@@ -29,7 +29,23 @@ final class BasketItemCell: UITableViewCell {
     
     private lazy var priceLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 17, weight: .bold)
+        label.font = UIFont(name: "SFProText-Regular", size: 13) ?? .systemFont(ofSize: 13, weight: .regular)
+        label.textColor = .black
+        return label
+    }()
+    
+    private lazy var priceTitleLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Цена"
+        label.font = UIFont(name: "SFProText-Regular", size: 13) ?? .systemFont(ofSize: 13, weight: .regular)
+        label.textColor = .black
+        return label
+    }()
+    
+    private lazy var priceValueLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont(name: "SFProText-Bold", size: 17) ?? .systemFont(ofSize: 17, weight: .bold)
+        label.textColor = .black
         return label
     }()
     
@@ -56,13 +72,15 @@ final class BasketItemCell: UITableViewCell {
         contentView.addSubview(nftImageView)
         contentView.addSubview(nameLabel)
         contentView.addSubview(ratingStackView)
-        contentView.addSubview(priceLabel)
+        contentView.addSubview(priceTitleLabel)
+        contentView.addSubview(priceValueLabel)
         contentView.addSubview(deleteButton)
         
         nftImageView.translatesAutoresizingMaskIntoConstraints = false
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         ratingStackView.translatesAutoresizingMaskIntoConstraints = false
-        priceLabel.translatesAutoresizingMaskIntoConstraints = false
+        priceTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        priceValueLabel.translatesAutoresizingMaskIntoConstraints = false
         deleteButton.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
@@ -78,8 +96,11 @@ final class BasketItemCell: UITableViewCell {
             ratingStackView.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
             ratingStackView.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 4),
             
-            priceLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
-            priceLabel.bottomAnchor.constraint(equalTo: nftImageView.bottomAnchor, constant: -8),
+            priceTitleLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+            priceTitleLabel.topAnchor.constraint(equalTo: ratingStackView.bottomAnchor, constant: 12),
+            
+            priceValueLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+            priceValueLabel.topAnchor.constraint(equalTo: priceTitleLabel.bottomAnchor, constant: 2),
             
             deleteButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             deleteButton.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
@@ -92,7 +113,7 @@ final class BasketItemCell: UITableViewCell {
         self.deleteAction = deleteAction
         
         nameLabel.text = item.name
-        priceLabel.text = String(format: "%.2f ETH", item.price)
+        priceValueLabel.text = String(format: "%.2f ETH", item.price)
         
         // Загружаем первую картинку из массива URL с помощью Kingfisher
         if let firstImageURL = item.images.first {

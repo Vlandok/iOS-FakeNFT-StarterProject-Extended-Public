@@ -4,26 +4,16 @@ final class PaymentSuccessViewController: UIViewController {
     
     private lazy var imageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(systemName: "checkmark.circle.fill")
-        imageView.tintColor = .systemGreen
+        imageView.image = UIImage(named: "56_digital_art_x4")
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()
     
-    private lazy var titleLabel: UILabel = {
-        let label = UILabel()
-        label.text = NSLocalizedString("Success.title", comment: "")
-        label.font = .systemFont(ofSize: 22, weight: .bold)
-        label.textAlignment = .center
-        return label
-    }()
-    
     private lazy var messageLabel: UILabel = {
         let label = UILabel()
-        label.text = NSLocalizedString("Success.message", comment: "")
-        label.font = .systemFont(ofSize: 15)
+        label.text = "Успех! Оплата прошла,поздравляем с покупкой!"
+        label.font = .systemFont(ofSize: 22, weight: .bold)
         label.textAlignment = .center
-        label.textColor = .systemGray
         label.numberOfLines = 0
         return label
     }()
@@ -44,32 +34,36 @@ final class PaymentSuccessViewController: UIViewController {
         navigationItem.hidesBackButton = true
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tabBarController?.tabBar.isHidden = true
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        tabBarController?.tabBar.isHidden = false
+    }
+    
     private func setupUI() {
         view.backgroundColor = .white
         
         view.addSubview(imageView)
-        view.addSubview(titleLabel)
         view.addSubview(messageLabel)
         view.addSubview(backButton)
         
         imageView.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
         messageLabel.translatesAutoresizingMaskIntoConstraints = false
         backButton.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
+            imageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 68),
             imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            imageView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -100),
-            imageView.widthAnchor.constraint(equalToConstant: 108),
-            imageView.heightAnchor.constraint(equalToConstant: 108),
+            imageView.widthAnchor.constraint(equalToConstant: 278),
+            imageView.heightAnchor.constraint(equalToConstant: 278),
             
-            titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 20),
-            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            
-            messageLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
-            messageLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            messageLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            messageLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 20),
+            messageLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 36),
+            messageLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -36),
             
             backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             backButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),

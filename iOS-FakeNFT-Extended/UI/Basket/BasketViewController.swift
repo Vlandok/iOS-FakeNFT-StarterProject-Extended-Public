@@ -21,29 +21,17 @@ final class BasketViewController: UIViewController {
     private lazy var emptyStateView: UIView = {
         let view = UIView()
         
-        let imageView = UIImageView()
-        imageView.image = UIImage(systemName: "cart.badge.minus")
-        imageView.tintColor = .systemGray3
-        imageView.contentMode = .scaleAspectFit
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        
         let label = UILabel()
         label.text = NSLocalizedString("Basket.empty", comment: "")
         label.textAlignment = .center
-        label.font = .systemFont(ofSize: 17, weight: .bold)
+        label.font = UIFont(name: "SFProText-Bold", size: 17) ?? .systemFont(ofSize: 17, weight: .bold)
         label.translatesAutoresizingMaskIntoConstraints = false
         
-        view.addSubview(imageView)
         view.addSubview(label)
         
         NSLayoutConstraint.activate([
-            imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            imageView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -40),
-            imageView.widthAnchor.constraint(equalToConstant: 80),
-            imageView.heightAnchor.constraint(equalToConstant: 80),
-            
-            label.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 20),
-            label.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
         view.isHidden = true
         return view
@@ -51,13 +39,23 @@ final class BasketViewController: UIViewController {
     
     private lazy var bottomView: UIView = {
         let view = UIView()
-        view.backgroundColor = .systemGray6
+        view.backgroundColor = UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0) // Светло-серый
+        view.layer.cornerRadius = 12
+        view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         return view
+    }()
+    
+    private lazy var nftCountLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont(name: "SFProText-Regular", size: 15) ?? .systemFont(ofSize: 15, weight: .regular)
+        label.textColor = .black
+        return label
     }()
     
     private lazy var totalLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 15)
+        label.font = UIFont(name: "SFProText-Bold", size: 17) ?? .systemFont(ofSize: 17, weight: .bold)
+        label.textColor = UIColor(red: 0.42, green: 0.69, blue: 0.20, alpha: 1.0) // Зеленый
         return label
     }()
     
@@ -66,18 +64,21 @@ final class BasketViewController: UIViewController {
         button.setTitle(NSLocalizedString("Basket.pay", comment: ""), for: .normal)
         button.backgroundColor = .black
         button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = UIFont(name: "SFProText-Bold", size: 17) ?? .systemFont(ofSize: 17, weight: .bold)
         button.layer.cornerRadius = 16
         button.addTarget(self, action: #selector(payTapped), for: .touchUpInside)
         return button
     }()
     
     private lazy var sortButton: UIBarButtonItem = {
-        UIBarButtonItem(
-            image: UIImage(systemName: "arrow.up.arrow.down"),
+        let button = UIBarButtonItem(
+            image: UIImage(named: "SortIcon"),
             style: .plain,
             target: self,
             action: #selector(sortTapped)
         )
+        button.tintColor = .black
+        return button
     }()
     
     internal lazy var activityIndicator = UIActivityIndicatorView()
@@ -100,7 +101,7 @@ final class BasketViewController: UIViewController {
     
     private func setupUI() {
         view.backgroundColor = .white
-        title = NSLocalizedString("Tab.basket", comment: "")
+        // Убираем title
         navigationItem.rightBarButtonItem = sortButton
         
         view.addSubview(tableView)
@@ -108,12 +109,14 @@ final class BasketViewController: UIViewController {
         view.addSubview(bottomView)
         view.addSubview(activityIndicator)
         
-        bottomView.addSubview(payButton)
+        bottomView.addSubview(nftCountLabel)
         bottomView.addSubview(totalLabel)
+        bottomView.addSubview(payButton)
         
         tableView.translatesAutoresizingMaskIntoConstraints = false
         emptyStateView.translatesAutoresizingMaskIntoConstraints = false
         bottomView.translatesAutoresizingMaskIntoConstraints = false
+        nftCountLabel.translatesAutoresizingMaskIntoConstraints = false
         totalLabel.translatesAutoresizingMaskIntoConstraints = false
         payButton.translatesAutoresizingMaskIntoConstraints = false
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
@@ -132,15 +135,18 @@ final class BasketViewController: UIViewController {
             bottomView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bottomView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-            bottomView.heightAnchor.constraint(equalToConstant: 100),
+            bottomView.heightAnchor.constraint(equalToConstant: 76),
             
-            totalLabel.topAnchor.constraint(equalTo: bottomView.topAnchor, constant: 12),
-            totalLabel.centerXAnchor.constraint(equalTo: bottomView.centerXAnchor),
+            nftCountLabel.leadingAnchor.constraint(equalTo: bottomView.leadingAnchor, constant: 16),
+            nftCountLabel.centerYAnchor.constraint(equalTo: bottomView.centerYAnchor, constant: -10),
             
-            payButton.topAnchor.constraint(equalTo: totalLabel.bottomAnchor, constant: 8),
-            payButton.centerXAnchor.constraint(equalTo: bottomView.centerXAnchor),
+            totalLabel.leadingAnchor.constraint(equalTo: bottomView.leadingAnchor, constant: 16),
+            totalLabel.topAnchor.constraint(equalTo: nftCountLabel.bottomAnchor, constant: 2),
+            
+            payButton.trailingAnchor.constraint(equalTo: bottomView.trailingAnchor, constant: -16),
+            payButton.centerYAnchor.constraint(equalTo: bottomView.centerYAnchor),
             payButton.widthAnchor.constraint(equalToConstant: 240),
-            payButton.heightAnchor.constraint(equalToConstant: 44),
+            payButton.heightAnchor.constraint(equalToConstant: 60),
             
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
@@ -162,6 +168,11 @@ extension BasketViewController: BasketView {
         tableView.isHidden = false
         emptyStateView.isHidden = true
         bottomView.isHidden = false
+        navigationItem.rightBarButtonItem = sortButton
+        
+        // Обновляем количество NFT
+        nftCountLabel.text = "\(items.count) NFT"
+        
         tableView.reloadData()
     }
     
@@ -169,6 +180,7 @@ extension BasketViewController: BasketView {
         tableView.isHidden = true
         emptyStateView.isHidden = false
         bottomView.isHidden = true
+        navigationItem.rightBarButtonItem = nil
     }
     
     func updateTotalPrice(_ price: String) {

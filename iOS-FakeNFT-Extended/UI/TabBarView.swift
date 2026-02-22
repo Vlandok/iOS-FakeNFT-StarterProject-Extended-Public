@@ -26,10 +26,12 @@ struct TabBarView: View {
             // Корзина
             BasketTabView()
                 .tabItem {
-                    Label(
-                        NSLocalizedString("Tab.cart", comment: ""),
-                        systemImage: "bag.fill"
-                    )
+                    Label {
+                        Text(NSLocalizedString("Tab.cart", comment: ""))
+                    } icon: {
+                        Image("Basket")
+                            .renderingMode(.template)
+                    }
                 }
             
             // Статистика

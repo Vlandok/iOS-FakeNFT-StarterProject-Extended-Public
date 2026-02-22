@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 
-@MainActor
 protocol BasketPresenter {
     func viewDidLoad()
     func deleteItem(at index: Int)
@@ -28,7 +27,9 @@ final class BasketPresenterImpl: BasketPresenter {
     private var currentSort: SortType = .byName
     private var state = BasketState.initial {
         didSet {
-            Task { await stateDidChange() }
+            DispatchQueue.main.async { [weak self] in
+                self?.stateDidChange()
+            }
         }
     }
     
@@ -54,17 +55,10 @@ final class BasketPresenterImpl: BasketPresenter {
     
     @objc private func handlePaymentSuccess() {
         // Очищаем корзину на сервере
-        Task {
-            do {
-                _ = try await service.updateBasket(nftIds: [])
-            } catch {
-                print("Failed to clear basket on server: \(error)")
-            }
-            
-            // В любом случае очищаем локально и показываем пустое состояние
-            await MainActor.run {
-                items.removeAll()
-                state = .empty
+        service.updateBasket(nftIds: []) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.items.removeAll()
+                self?.state = .empty
             }
         }
     }
@@ -76,7 +70,7 @@ final class BasketPresenterImpl: BasketPresenter {
     func deleteItem(at index: Int) {
         guard index < items.count else { return }
         let item = items[index]
-        router.showDeleteConfirmation(itemName: item.name) { [weak self] in
+        router.showDeleteConfirmation(item: item) { [weak self] in
             self?.confirmDelete(at: index)
         }
     }
@@ -91,13 +85,13 @@ final class BasketPresenterImpl: BasketPresenter {
         router.openPayment(items: items)
     }
     
-    private func stateDidChange() async {
+    private func stateDidChange() {
         switch state {
         case .initial:
             break
         case .loading:
             view?.showLoading()
-            await loadBasket()
+            loadBasket()
         case .data(let items):
             view?.hideLoading()
             self.items = items
@@ -112,18 +106,27 @@ final class BasketPresenterImpl: BasketPresenter {
         }
     }
     
-    private func loadBasket() async {
-        do {
-            let basket = try await service.loadBasket()
-            if basket.nfts.isEmpty {
-                state = .empty
-            } else {
-                let items = try await service.loadNftDetails(ids: basket.nfts)
-                state = .data(items)
+    private func loadBasket() {
+        service.loadBasket { [weak self] result in
+            guard let self = self else { return }
+            
+            switch result {
+            case .success(let basket):
+                if basket.nfts.isEmpty {
+                    self.state = .empty
+                } else {
+                    self.service.loadNftDetails(ids: basket.nfts) { [weak self] detailsResult in
+                        switch detailsResult {
+                        case .success(let items):
+                            self?.state = .data(items)
+                        case .failure:
+                            self?.state = .empty
+                        }
+                    }
+                }
+            case .failure:
+                self.state = .empty
             }
-        } catch {
-            // В случае ошибки показываем пустую корзину
-            state = .empty
         }
     }
     
@@ -140,10 +143,8 @@ final class BasketPresenterImpl: BasketPresenter {
     }
     
     private func updateBasketOnServer() {
-        Task {
-            let ids = items.map { $0.id }
-            _ = try? await service.updateBasket(nftIds: ids)
-        }
+        let ids = items.map { $0.id }
+        service.updateBasket(nftIds: ids) { _ in }
     }
     
     private func applySorting(_ sortType: SortType) {
