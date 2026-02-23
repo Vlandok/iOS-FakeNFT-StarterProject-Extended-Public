@@ -6,12 +6,10 @@ struct DeleteConfirmationSwiftUIView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        ZStack {
-            // Blur на весь экран
+        ZStack {  
             VisualEffectBlur(blurStyle: .light)
                 .ignoresSafeArea()
             
-            // Контент по центру
             VStack(spacing: 12) {
                 AsyncImage(url: item.images.first) { image in
                     image

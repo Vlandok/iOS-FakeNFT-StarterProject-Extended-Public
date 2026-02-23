@@ -3,6 +3,11 @@ import SwiftUI
 struct PaymentSuccessSwiftUIView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.presentationMode) var presentationMode
+    @Binding var isTabBarVisible: Bool
+    
+    init(isTabBarVisible: Binding<Bool>) {
+        _isTabBarVisible = isTabBarVisible
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -13,8 +18,8 @@ struct PaymentSuccessSwiftUIView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 278, height: 278)
             
-            Text("Успех! Оплата прошла,поздравляем с покупкой!")
-                .font(.system(size: 22, weight: .bold))
+            Text("Успех! Оплата прошла,\nпоздравляем с покупкой!")
+                .font(.custom("SF Pro Text", size: 22).weight(.bold))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 36)
                 .padding(.top, 20)
@@ -24,6 +29,9 @@ struct PaymentSuccessSwiftUIView: View {
             Button(action: {
                 // Отправляем уведомление для обновления корзины
                 NotificationCenter.default.post(name: NSNotification.Name("RefreshBasket"), object: nil)
+                
+                // Показываем TabBar перед возвратом
+                isTabBarVisible = true
                 
                 // Возвращаемся назад через navigation stack
                 if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -44,7 +52,9 @@ struct PaymentSuccessSwiftUIView: View {
             .padding(.bottom, 16)
         }
         .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .tabBar)
+        .onAppear {
+            isTabBarVisible = false
+        }
     }
     
     private func findAndPopNavigation(in viewController: UIViewController) {

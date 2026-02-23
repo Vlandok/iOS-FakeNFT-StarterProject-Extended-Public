@@ -3,9 +3,11 @@ import SwiftUI
 struct PaymentSwiftUIView: View {
     @StateObject private var viewModel: PaymentViewModel
     @Environment(\.dismiss) private var dismiss
+    @Binding var isTabBarVisible: Bool
     
-    init(items: [BasketItem], service: BasketService) {
+    init(items: [BasketItem], service: BasketService, isTabBarVisible: Binding<Bool>) {
         _viewModel = StateObject(wrappedValue: PaymentViewModel(items: items, service: service))
+        _isTabBarVisible = isTabBarVisible
     }
     
     var body: some View {
@@ -20,7 +22,7 @@ struct PaymentSwiftUIView: View {
             
             // Скрытый NavigationLink для программной навигации
             NavigationLink(
-                destination: PaymentSuccessSwiftUIView(),
+                destination: PaymentSuccessSwiftUIView(isTabBarVisible: $isTabBarVisible),
                 isActive: $viewModel.showSuccess
             ) {
                 EmptyView()
@@ -34,7 +36,6 @@ struct PaymentSwiftUIView: View {
         .navigationTitle("Выберите способ оплаты")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .tabBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: { dismiss() }) {
@@ -46,10 +47,29 @@ struct PaymentSwiftUIView: View {
         }
         .onAppear {
             viewModel.loadCurrencies()
+            isTabBarVisible = false
+            configureNavigationBar()
         }
         .onDisappear {
-            // Таббар автоматически показывается через .toolbar(.hidden, for: .tabBar)
+            if !viewModel.showSuccess {
+                isTabBarVisible = true
+            }
         }
+    }
+    
+    private func configureNavigationBar() {
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = .white
+        
+        // Настройка шрифта для заголовка
+        appearance.titleTextAttributes = [
+            .font: UIFont(name: "SF Pro Text", size: 17)?.withWeight(.bold) ?? UIFont.systemFont(ofSize: 17, weight: .bold),
+            .foregroundColor: UIColor.black
+        ]
+        
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
     }
     
     private var currencyGrid: some View {
@@ -99,11 +119,11 @@ struct PaymentSwiftUIView: View {
     private var agreementText: some View {
         HStack {
             Text("Совершая покупку, вы соглашаетесь с условиями ")
-                .font(.system(size: 13))
+                .font(.custom("SF Pro Text", size: 13))
                 .foregroundColor(.black)
             +
             Text("Пользовательского соглашения")
-                .font(.system(size: 13))
+                .font(.custom("SF Pro Text", size: 13))
                 .foregroundColor(.blue)
         }
         .padding(.horizontal, 16)
@@ -111,7 +131,9 @@ struct PaymentSwiftUIView: View {
             viewModel.showAgreement = true
         }
         .sheet(isPresented: $viewModel.showAgreement) {
-            WebView(url: URL(string: "https://yandex.ru/legal/practicum_termsofuse/")!)
+            if let url = URL(string: "https://yandex.ru/legal/practicum_termsofuse/") {
+                WebView(url: url)
+            }
         }
     }
 }
@@ -134,11 +156,11 @@ struct CurrencyCell: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(currency.title)
-                    .font(.system(size: 13))
+                    .font(.custom("SF Pro Text", size: 13))
                     .foregroundColor(.black)
                 
                 Text(currency.name)
-                    .font(.system(size: 13))
+                    .font(.custom("SF Pro Text", size: 13))
                     .foregroundColor(Color(red: 0.42, green: 0.69, blue: 0.20))
             }
             
@@ -169,3 +191,12 @@ struct ProgressHUDView: View {
 }
 
 extension Currency: Identifiable {}
+
+extension UIFont {
+    func withWeight(_ weight: UIFont.Weight) -> UIFont {
+        let descriptor = fontDescriptor.addingAttributes([
+            .traits: [UIFontDescriptor.TraitKey.weight: weight]
+        ])
+        return UIFont(descriptor: descriptor, size: pointSize)
+    }
+}

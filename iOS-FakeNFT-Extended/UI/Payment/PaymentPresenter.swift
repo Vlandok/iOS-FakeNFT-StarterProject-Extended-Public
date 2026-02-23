@@ -4,6 +4,7 @@ enum PaymentState {
     case initial, loading, failed(Error), data([Currency])
 }
 
+@MainActor
 class PaymentViewModel: ObservableObject {
     @Published var currencies: [Currency] = []
     @Published var selectedCurrency: Currency?
@@ -20,49 +21,61 @@ class PaymentViewModel: ObservableObject {
     }
     
     func loadCurrencies() {
-        service.loadCurrencies { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
+        Task {
+            print("[PaymentViewModel] INFO: Loading currencies")
+            do {
+                let loadedCurrencies = try await service.loadCurrencies()
+                print("[PaymentViewModel] INFO: Loaded \(loadedCurrencies.count) currencies")
                 
-                switch result {
-                case .success(let currencies):
-                    // Сортируем валюты в правильном порядке
-                    let order = ["Bitcoin", "Dogecoin", "Tether", "Apecoin", "Solana", "Ethereum", "Cardano", "Shiba Inu"]
-                    self.currencies = currencies.sorted { currency1, currency2 in
-                        let index1 = order.firstIndex(of: currency1.title) ?? Int.max
-                        let index2 = order.firstIndex(of: currency2.title) ?? Int.max
-                        return index1 < index2
-                    }
-                case .failure:
-                    self.currencies = []
+                // Сортируем валюты в правильном порядке
+                let order = ["Bitcoin", "Dogecoin", "Tether", "Apecoin", "Solana", "Ethereum", "Cardano", "Shiba Inu"]
+                currencies = loadedCurrencies.sorted { currency1, currency2 in
+                    let index1 = order.firstIndex(of: currency1.title) ?? Int.max
+                    let index2 = order.firstIndex(of: currency2.title) ?? Int.max
+                    return index1 < index2
                 }
+                print("[PaymentViewModel] INFO: Currencies sorted")
+            } catch {
+                print("[PaymentViewModel] ERROR: Failed to load currencies - \(error.localizedDescription)")
+                currencies = []
             }
         }
     }
     
     func selectCurrency(_ currency: Currency) {
+        print("[PaymentViewModel] INFO: Selected currency: \(currency.title)")
         selectedCurrency = currency
     }
     
     func pay() {
-        guard selectedCurrency != nil else { return }
-        
-        DispatchQueue.main.async { [weak self] in
-            self?.isProcessing = true
+        guard selectedCurrency != nil else {
+            print("[PaymentViewModel] WARNING: Payment attempted without selected currency")
+            return
         }
         
-        // Имитация процесса оплаты с использованием GCD
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 2.0) { [weak self] in
-            guard let self = self else { return }
+        Task {
+            print("[PaymentViewModel] INFO: Starting payment process")
+            isProcessing = true
+            
+            // Имитация процесса оплаты
+            print("[PaymentViewModel] INFO: Processing payment (2 seconds)")
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
             
             // Очищаем корзину на сервере
-            self.service.updateBasket(nftIds: []) { _ in
-                // Даем серверу время на обработку
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    self.isProcessing = false
-                    self.showSuccess = true
-                }
+            print("[PaymentViewModel] INFO: Clearing basket on server")
+            do {
+                try await service.updateBasket(nftIds: [])
+                print("[PaymentViewModel] INFO: Basket cleared successfully")
+            } catch {
+                print("[PaymentViewModel] ERROR: Failed to clear basket - \(error.localizedDescription)")
             }
+            
+            // Даем серверу время на обработку
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            
+            isProcessing = false
+            showSuccess = true
+            print("[PaymentViewModel] INFO: Payment completed successfully")
         }
     }
 }

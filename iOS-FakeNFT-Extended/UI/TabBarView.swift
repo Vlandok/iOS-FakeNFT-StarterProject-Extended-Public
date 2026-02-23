@@ -51,17 +51,14 @@ struct TabBarView: View {
         }
         .tint(Color(.ypBlue))
         .onChange(of: selectedTab) { oldValue, newValue in
-            print("📱 [TabBar] Tab changed: \(oldValue) -> \(newValue)")
-            // Перезагружаем корзину при переключении на вкладку корзины
             if newValue == 2 {
-                print("📱 [TabBar] Switched to BASKET tab - posting RefreshBasket notification")
+                print("[TabBarView] INFO: Switched to basket tab, posting refresh notification")
                 NotificationCenter.default.post(name: NSNotification.Name("RefreshBasket"), object: nil)
             }
         }
         .onAppear {
-            // Загружаем корзину при первом запуске, если открыта вкладка корзины
             if selectedTab == 2 {
-                print("📱 [TabBar] Initial load - BASKET tab is selected")
+                print("[TabBarView] INFO: Initial load with basket tab selected")
                 NotificationCenter.default.post(name: NSNotification.Name("RefreshBasket"), object: nil)
             }
         }
@@ -79,9 +76,13 @@ struct StatisticsPlaceholderView: View {
 
 struct BasketTabView: View {
     @Environment(ServicesAssembly.self) private var services
+    @State private var isTabBarVisible = true
     
     var body: some View {
-        BasketSwiftUIView(service: services.basketService)
+        BasketSwiftUIView(service: services.basketService, isTabBarVisible: $isTabBarVisible)
+            .onAppear {
+                isTabBarVisible = true
+            }
     }
 }
 

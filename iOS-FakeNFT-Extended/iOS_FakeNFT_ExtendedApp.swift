@@ -10,9 +10,8 @@ struct iOS_FakeNFT_ExtendedApp: App {
             ContentView()
                 .environment(services)
                 .onChange(of: scenePhase) { oldPhase, newPhase in
-                    print("🚀 [App] scenePhase changed: \(oldPhase) -> \(newPhase)")
                     if newPhase == .active {
-                        print("🚀 [App] App became ACTIVE - posting RefreshBasket notification")
+                        print("[App] INFO: App became active, posting refresh notification")
                         NotificationCenter.default.post(name: NSNotification.Name("RefreshBasket"), object: nil)
                     }
                 }

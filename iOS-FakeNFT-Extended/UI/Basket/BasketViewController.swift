@@ -3,9 +3,12 @@ import SwiftUI
 struct BasketSwiftUIView: View {
     @StateObject private var viewModel: BasketViewModel
     @State private var refreshID = UUID()
+    @State private var hasAppeared = false
+    @Binding var isTabBarVisible: Bool
     
-    init(service: BasketService) {
+    init(service: BasketService, isTabBarVisible: Binding<Bool>) {
         _viewModel = StateObject(wrappedValue: BasketViewModel(service: service))
+        _isTabBarVisible = isTabBarVisible
     }
     
     var body: some View {
@@ -53,12 +56,21 @@ struct BasketSwiftUIView: View {
                 .background(BackgroundClearView())
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RefreshBasket"))) { _ in
-                print("🎬 [BasketView] RefreshBasket notification received")
+                print("[BasketView] INFO: Received RefreshBasket notification")
                 refreshID = UUID()
-                print("🎬 [BasketView] New refreshID: \(refreshID)")
+                hasAppeared = false // Сбрасываем флаг для повторной загрузки
                 viewModel.loadBasket()
             }
-            .toolbar(.visible, for: .tabBar)
+            .onAppear {
+                // Загружаем только при первом появлении
+                if !hasAppeared {
+                    print("[BasketView] INFO: First appearance, loading basket")
+                    hasAppeared = true
+                    viewModel.loadBasket()
+                }
+                isTabBarVisible = true
+            }
+            .toolbar(isTabBarVisible ? .visible : .hidden, for: .tabBar)
         }
     }
     
@@ -103,7 +115,7 @@ struct BasketSwiftUIView: View {
                 
                 Spacer()
                 
-                NavigationLink(destination: PaymentSwiftUIView(items: viewModel.items, service: viewModel.service)) {
+                NavigationLink(destination: PaymentSwiftUIView(items: viewModel.items, service: viewModel.service, isTabBarVisible: $isTabBarVisible)) {
                     Text(NSLocalizedString("Basket.pay", comment: ""))
                         .font(.custom("SFProText-Bold", size: 17))
                         .foregroundColor(.white)
@@ -164,7 +176,8 @@ struct BasketItemRow: View {
             Spacer()
             
             Button(action: onDelete) {
-                Image(systemName: "trash")
+                Image("Cart")
+                    .renderingMode(.template)
                     .foregroundColor(.black)
                     .frame(width: 40, height: 40)
             }

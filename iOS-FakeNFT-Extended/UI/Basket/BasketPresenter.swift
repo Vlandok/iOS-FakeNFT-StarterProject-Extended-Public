@@ -10,12 +10,21 @@ enum SortType: String {
     case byName = "Basket.sort.name"
 }
 
+@MainActor
 class BasketViewModel: ObservableObject {
-    @Published var items: [BasketItem] = []
+    @Published var items: [BasketItem] = [] {
+        willSet {
+            print("[BasketViewModel] DEBUG: items willSet - old count: \(items.count), new count: \(newValue.count)")
+            if items.count == newValue.count {
+                print("[BasketViewModel] DEBUG: Order changed - old first: \(items.first?.name ?? "none"), new first: \(newValue.first?.name ?? "none")")
+            }
+        }
+    }
     @Published var isLoading = false
     @Published var showSortOptions = false
     @Published var itemToDelete: BasketItem?
     @Published var errorMessage: String?
+    @Published var sortTrigger = 0 // Вспомогательная переменная для принудительного обновления
     
     let service: BasketService
     private var currentSort: SortType = .byName
@@ -31,68 +40,38 @@ class BasketViewModel: ObservableObject {
     }
     
     func loadBasket() {
-        print("📦 [BasketViewModel] ========== START loadBasket ==========")
-        DispatchQueue.main.async { [weak self] in
-            self?.isLoading = true
-            print("📦 [BasketViewModel] Set isLoading = true")
-        }
-        
-        service.loadBasket { [weak self] result in
-            guard let self = self else { 
-                print("📦 [BasketViewModel] ❌ self is nil in loadBasket callback")
-                return 
-            }
+        Task {
+            print("[BasketViewModel] INFO: Starting basket load")
+            isLoading = true
             
-            switch result {
-            case .success(let basket):
-                print("📦 [BasketViewModel] ✅ Basket loaded successfully")
-                print("📦 [BasketViewModel] Basket.nfts count: \(basket.nfts.count)")
-                print("📦 [BasketViewModel] Basket.nfts IDs: \(basket.nfts)")
+            do {
+                let basket = try await service.loadBasket()
+                print("[BasketViewModel] INFO: Basket loaded successfully with \(basket.nfts.count) items")
                 
                 if basket.nfts.isEmpty {
-                    DispatchQueue.main.async {
-                        self.items = []
-                        self.isLoading = false
-                        print("📦 [BasketViewModel] Basket is EMPTY - showing empty state")
-                    }
+                    print("[BasketViewModel] INFO: Basket is empty, showing empty state")
+                    items = []
                 } else {
-                    print("📦 [BasketViewModel] Loading NFT details for \(basket.nfts.count) items...")
-                    self.service.loadNftDetails(ids: basket.nfts) { [weak self] detailsResult in
-                        DispatchQueue.main.async {
-                            guard let self = self else { 
-                                print("📦 [BasketViewModel] ❌ self is nil in loadNftDetails callback")
-                                return 
-                            }
-                            self.isLoading = false
-                            
-                            switch detailsResult {
-                            case .success(let items):
-                                print("📦 [BasketViewModel] ✅ Loaded \(items.count) NFT details")
-                                items.forEach { item in
-                                    print("📦 [BasketViewModel]   - \(item.name) (\(item.id))")
-                                }
-                                self.items = items
-                                self.applySorting(self.currentSort)
-                                print("📦 [BasketViewModel] Applied sorting: \(self.currentSort)")
-                            case .failure(let error):
-                                print("📦 [BasketViewModel] ❌ Failed to load NFT details: \(error)")
-                                self.items = []
-                            }
-                        }
-                    }
+                    print("[BasketViewModel] INFO: Loading NFT details for \(basket.nfts.count) items")
+                    let loadedItems = try await service.loadNftDetails(ids: basket.nfts)
+                    print("[BasketViewModel] INFO: Successfully loaded \(loadedItems.count) NFT details")
+                    items = loadedItems
+                    applySorting(currentSort)
+                    print("[BasketViewModel] INFO: Applied sorting: \(currentSort.rawValue)")
                 }
-            case .failure(let error):
-                print("📦 [BasketViewModel] ❌ Failed to load basket: \(error)")
-                DispatchQueue.main.async {
-                    self.items = []
-                    self.isLoading = false
-                }
+            } catch {
+                print("[BasketViewModel] ERROR: Failed to load basket - \(error.localizedDescription)")
+                items = []
+                errorMessage = error.localizedDescription
             }
+            
+            isLoading = false
+            print("[BasketViewModel] INFO: Basket load completed")
         }
-        print("📦 [BasketViewModel] ========== END loadBasket (async) ==========")
     }
     
     func confirmDelete(_ item: BasketItem) {
+        print("[BasketViewModel] INFO: Deleting item: \(item.id)")
         items.removeAll { $0.id == item.id }
         updateBasketOnServer()
         itemToDelete = nil
@@ -101,23 +80,55 @@ class BasketViewModel: ObservableObject {
     func sortBy(_ sortType: SortType) {
         currentSort = sortType
         saveSortType(sortType)
-        applySorting(sortType)
+        
+        // Сохраняем текущие данные
+        let currentItems = items
+        
+        // Очищаем список для триггера обновления UI
+        items = []
+        
+        // Применяем сортировку
+        Task {
+            switch sortType {
+            case .byPrice:
+                items = currentItems.sorted(by: { $0.price > $1.price })
+            case .byRating:
+                items = currentItems.sorted(by: { $0.rating > $1.rating })
+            case .byName:
+                items = currentItems.sorted(by: { $0.name < $1.name })
+            }
+            
+            print("[BasketViewModel] INFO: Sorted by \(sortType.rawValue)")
+            for (i, item) in items.enumerated() {
+                print("  [\(i)] \(item.name) - price: \(item.price), rating: \(item.rating)")
+            }
+        }
     }
     
     private func applySorting(_ sortType: SortType) {
+        let sortedItems: [BasketItem]
         switch sortType {
         case .byPrice:
-            items.sort { $0.price < $1.price }
+            sortedItems = items.sorted { $0.price < $1.price }
         case .byRating:
-            items.sort { $0.rating > $1.rating }
+            sortedItems = items.sorted { $0.rating > $1.rating }
         case .byName:
-            items.sort { $0.name < $1.name }
+            sortedItems = items.sorted { $0.name < $1.name }
         }
+        items = sortedItems
     }
     
     private func updateBasketOnServer() {
         let ids = items.map { $0.id }
-        service.updateBasket(nftIds: ids) { _ in }
+        print("[BasketViewModel] INFO: Updating basket on server with \(ids.count) items")
+        Task {
+            do {
+                try await service.updateBasket(nftIds: ids)
+                print("[BasketViewModel] INFO: Basket updated successfully on server")
+            } catch {
+                print("[BasketViewModel] ERROR: Failed to update basket on server - \(error.localizedDescription)")
+            }
+        }
     }
     
     private func saveSortType(_ sortType: SortType) {
@@ -128,6 +139,7 @@ class BasketViewModel: ObservableObject {
         if let saved = UserDefaults.standard.string(forKey: "basket_sort_type"),
            let sortType = SortType(rawValue: saved) {
             currentSort = sortType
+            print("[BasketViewModel] INFO: Loaded saved sort type: \(sortType.rawValue)")
         }
     }
 }
