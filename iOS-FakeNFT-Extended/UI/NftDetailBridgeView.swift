@@ -13,7 +13,7 @@ struct NftDetailBridgeView: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: NftDetailViewController, context: Context) {
-        // Обновляет состояние указанного контроллера представления новой информацией из SwiftUI.
+      
     }
 }
 

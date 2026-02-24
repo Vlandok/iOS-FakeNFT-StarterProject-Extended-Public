@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - ProfileService Protocol
 
-protocol ProfileService: Sendable {
+public protocol ProfileService: Sendable {
     func loadProfile(id: String) async throws -> Profile
     func updateProfile(id: String, update: ProfileUpdateDTO) async throws -> Profile
 }

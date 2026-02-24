@@ -1,13 +1,13 @@
 import Foundation
 
-struct BasketItem: Codable {
-    let id: String
-    let name: String
-    let rating: Int
-    let price: Double
-    let images: [URL]
+public struct BasketItem: Codable {
+    public let id: String
+    public let name: String
+    public let rating: Int
+    public let price: Double
+    public let images: [URL]
 }
 
-struct Basket: Codable {
-    let nfts: [String]
+public struct Basket: Codable {
+    public let nfts: [String]
 }

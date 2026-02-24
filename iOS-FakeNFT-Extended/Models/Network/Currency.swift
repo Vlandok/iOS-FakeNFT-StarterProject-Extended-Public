@@ -1,8 +1,8 @@
 import Foundation
 
-struct Currency: Codable {
-    let id: String
-    let title: String
-    let name: String
-    let image: URL
+public struct Currency: Codable {
+    public let id: String
+    public let title: String
+    public let name: String
+    public let image: URL
 }

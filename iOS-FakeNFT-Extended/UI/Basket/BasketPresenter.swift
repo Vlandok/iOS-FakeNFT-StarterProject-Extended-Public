@@ -1,14 +1,4 @@
-import Foundation
-import UIKit
-
-@MainActor
-protocol BasketPresenter {
-    func viewDidLoad()
-    func deleteItem(at index: Int)
-    func sortTapped()
-    func payTapped()
-    func markPaymentCompleted()
-}
+import SwiftUI
 
 enum BasketState {
     case initial, loading, failed(Error), data([BasketItem]), empty
@@ -20,158 +10,125 @@ enum SortType: String {
     case byName = "Basket.sort.name"
 }
 
-final class BasketPresenterImpl: BasketPresenter {
-    weak var view: BasketView?
-    private let service: BasketService
-    private let router: BasketRouter
-    
-    private var items: [BasketItem] = []
-    private var currentSort: SortType = .byName
-    private var hasCompletedPayment = false // Флаг успешной оплаты
-    private var state = BasketState.initial {
-        didSet {
-            Task { await stateDidChange() }
+@MainActor
+class BasketViewModel: ObservableObject {
+    @Published var items: [BasketItem] = [] {
+        willSet {
+            print("[BasketViewModel] DEBUG: items willSet - old count: \(items.count), new count: \(newValue.count)")
+            if items.count == newValue.count {
+                print("[BasketViewModel] DEBUG: Order changed - old first: \(items.first?.name ?? "none"), new first: \(newValue.first?.name ?? "none")")
+            }
         }
     }
+    @Published var isLoading = false
+    @Published var showSortOptions = false
+    @Published var itemToDelete: BasketItem?
+    @Published var errorMessage: String?
+    @Published var sortTrigger = 0 // Вспомогательная переменная для принудительного обновления
     
-    init(service: BasketService, router: BasketRouter) {
+    let service: BasketService
+    private var currentSort: SortType = .byName
+    
+    var totalPrice: String {
+        let total = items.reduce(0.0) { $0 + $1.price }
+        return String(format: "%.2f ETH", total)
+    }
+    
+    init(service: BasketService) {
         self.service = service
-        self.router = router
         loadSavedSort()
     }
     
-    func viewDidLoad() {
-        state = .loading
-    }
-    
-    func deleteItem(at index: Int) {
-        guard index < items.count else { return }
-        let item = items[index]
-        router.showDeleteConfirmation(itemName: item.name) { [weak self] in
-            self?.confirmDelete(at: index)
-        }
-    }
-    
-    func sortTapped() {
-        router.showSortOptions(current: currentSort) { [weak self] sortType in
-            self?.applySorting(sortType)
-        }
-    }
-    
-    func payTapped() {
-        router.openPayment(items: items)
-    }
-    
-    func markPaymentCompleted() {
-        hasCompletedPayment = true
-    }
-    
-    private func stateDidChange() async {
-        switch state {
-        case .initial:
-            break
-        case .loading:
-            view?.showLoading()
-            await loadBasket()
-        case .data(let items):
-            view?.hideLoading()
-            self.items = items
-            applySorting(currentSort)
-        case .empty:
-            view?.hideLoading()
-            view?.displayEmptyState()
-        case .failed(let error):
-            view?.hideLoading()
-            let errorModel = makeErrorModel(error)
-            view?.showError(errorModel)
-        }
-    }
-    
-    private func loadBasket() async {
-        do {
-            let basket = try await service.loadBasket()
-            if basket.nfts.isEmpty {
-                state = .empty
-            } else {
-                let items = try await service.loadNftDetails(ids: basket.nfts)
-                state = .data(items)
-            }
-        } catch {
-            // Если оплата прошла успешно, показываем пустую корзину
-            if hasCompletedPayment {
-                hasCompletedPayment = false // Сбрасываем флаг
-                state = .empty
-                return
+    func loadBasket() {
+        Task {
+            print("[BasketViewModel] INFO: Starting basket load")
+            isLoading = true
+            
+            do {
+                let basket = try await service.loadBasket()
+                print("[BasketViewModel] INFO: Basket loaded successfully with \(basket.nfts.count) items")
+                
+                if basket.nfts.isEmpty {
+                    print("[BasketViewModel] INFO: Basket is empty, showing empty state")
+                    items = []
+                } else {
+                    print("[BasketViewModel] INFO: Loading NFT details for \(basket.nfts.count) items")
+                    let loadedItems = try await service.loadNftDetails(ids: basket.nfts)
+                    print("[BasketViewModel] INFO: Successfully loaded \(loadedItems.count) NFT details")
+                    items = loadedItems
+                    applySorting(currentSort)
+                    print("[BasketViewModel] INFO: Applied sorting: \(currentSort.rawValue)")
+                }
+            } catch {
+                print("[BasketViewModel] ERROR: Failed to load basket - \(error.localizedDescription)")
+                items = []
+                errorMessage = error.localizedDescription
             }
             
-           
-            let mockItems = [
-                BasketItem(
-                    id: "1",
-                    name: "Archie",
-                    rating: 5,
-                    price: 1.57,
-                    images: [URL(string: "https://placeholder.com/nft1")!]
-                ),
-                BasketItem(
-                    id: "2",
-                    name: "Astronaut",
-                    rating: 4,
-                    price: 2.19,
-                    images: [URL(string: "https://placeholder.com/nft2")!]
-                ),
-                BasketItem(
-                    id: "3",
-                    name: "Beagle",
-                    rating: 3,
-                    price: 0.99,
-                    images: [URL(string: "https://placeholder.com/nft3")!]
-                )
-            ]
-            state = .data(mockItems)
+            isLoading = false
+            print("[BasketViewModel] INFO: Basket load completed")
         }
     }
     
-    private func confirmDelete(at index: Int) {
-        items.remove(at: index)
+    func confirmDelete(_ item: BasketItem) {
+        print("[BasketViewModel] INFO: Deleting item: \(item.id)")
+        items.removeAll { $0.id == item.id }
+        updateBasketOnServer()
+        itemToDelete = nil
+    }
+    
+    func sortBy(_ sortType: SortType) {
+        currentSort = sortType
+        saveSortType(sortType)
         
-        if items.isEmpty {
-            state = .empty
-        } else {
-            updateBasketOnServer()
-            view?.displayItems(items)
-            updateTotalPrice()
-        }
-    }
-    
-    private func updateBasketOnServer() {
+        // Сохраняем текущие данные
+        let currentItems = items
+        
+        // Очищаем список для триггера обновления UI
+        items = []
+        
+        // Применяем сортировку
         Task {
-            let ids = items.map { $0.id }
-            _ = try? await service.updateBasket(nftIds: ids)
+            switch sortType {
+            case .byPrice:
+                items = currentItems.sorted(by: { $0.price > $1.price })
+            case .byRating:
+                items = currentItems.sorted(by: { $0.rating > $1.rating })
+            case .byName:
+                items = currentItems.sorted(by: { $0.name < $1.name })
+            }
+            
+            print("[BasketViewModel] INFO: Sorted by \(sortType.rawValue)")
+            for (i, item) in items.enumerated() {
+                print("  [\(i)] \(item.name) - price: \(item.price), rating: \(item.rating)")
+            }
         }
     }
     
     private func applySorting(_ sortType: SortType) {
-        currentSort = sortType
-        saveSortType(sortType)
-        
+        let sortedItems: [BasketItem]
         switch sortType {
         case .byPrice:
-            items.sort { $0.price < $1.price }
+            sortedItems = items.sorted { $0.price < $1.price }
         case .byRating:
-            items.sort { $0.rating > $1.rating }
+            sortedItems = items.sorted { $0.rating > $1.rating }
         case .byName:
-            items.sort { $0.name < $1.name }
+            sortedItems = items.sorted { $0.name < $1.name }
         }
-        
-        view?.displayItems(items)
-        updateTotalPrice()
+        items = sortedItems
     }
     
-    private func updateTotalPrice() {
-        let total = items.reduce(0.0) { $0 + $1.price }
-        let formatted = String(format: "%.2f ETH", total)
-        view?.updateTotalPrice(formatted)
+    private func updateBasketOnServer() {
+        let ids = items.map { $0.id }
+        print("[BasketViewModel] INFO: Updating basket on server with \(ids.count) items")
+        Task {
+            do {
+                try await service.updateBasket(nftIds: ids)
+                print("[BasketViewModel] INFO: Basket updated successfully on server")
+            } catch {
+                print("[BasketViewModel] ERROR: Failed to update basket on server - \(error.localizedDescription)")
+            }
+        }
     }
     
     private func saveSortType(_ sortType: SortType) {
@@ -182,21 +139,9 @@ final class BasketPresenterImpl: BasketPresenter {
         if let saved = UserDefaults.standard.string(forKey: "basket_sort_type"),
            let sortType = SortType(rawValue: saved) {
             currentSort = sortType
-        }
-    }
-    
-    private func makeErrorModel(_ error: Error) -> ErrorModel {
-        let message: String
-        switch error {
-        case is NetworkClientError:
-            message = NSLocalizedString("Error.network", comment: "")
-        default:
-            message = NSLocalizedString("Error.unknown", comment: "")
-        }
-        
-        let actionText = NSLocalizedString("Error.repeat", comment: "")
-        return ErrorModel(message: message, actionText: actionText) { [weak self] in
-            self?.state = .loading
+            print("[BasketViewModel] INFO: Loaded saved sort type: \(sortType.rawValue)")
         }
     }
 }
+
+extension BasketItem: Identifiable {}

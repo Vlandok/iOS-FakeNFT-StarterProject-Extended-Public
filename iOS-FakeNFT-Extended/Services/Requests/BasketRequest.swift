@@ -14,6 +14,7 @@ struct UpdateBasketRequest: NetworkRequest {
     let nftIds: [String]
     
     var httpMethod: HttpMethod { .put }
+    var contentType: ContentType { .formUrlEncoded }
     var dto: Encodable? { BasketUpdateDTO(nfts: nftIds) }
     
     var endpoint: URL? {

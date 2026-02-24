@@ -1,129 +1,81 @@
-import Foundation
-
-@MainActor
-protocol PaymentPresenter {
-    func viewDidLoad()
-    func agreementTapped()
-    func payWithCurrency(_ currency: Currency)
-}
+import SwiftUI
 
 enum PaymentState {
     case initial, loading, failed(Error), data([Currency])
 }
 
-final class PaymentPresenterImpl: PaymentPresenter {
-    weak var view: PaymentView?
-    private let service: BasketService
-    private let router: PaymentRouter
+@MainActor
+class PaymentViewModel: ObservableObject {
+    @Published var currencies: [Currency] = []
+    @Published var selectedCurrency: Currency?
+    @Published var isProcessing = false
+    @Published var showSuccess = false
+    @Published var showAgreement = false
+    
     private let items: [BasketItem]
+    private let service: BasketService
     
-    private var state = PaymentState.initial {
-        didSet {
-            Task { await stateDidChange() }
-        }
-    }
-    
-    init(service: BasketService, router: PaymentRouter, items: [BasketItem]) {
-        self.service = service
-        self.router = router
+    init(items: [BasketItem], service: BasketService) {
         self.items = items
+        self.service = service
     }
     
-    func viewDidLoad() {
-        state = .loading
-    }
-    
-    func agreementTapped() {
-        router.openAgreement()
-    }
-    
-    func payWithCurrency(_ currency: Currency) {
-        view?.showPaymentProgress()
-        
+    func loadCurrencies() {
         Task {
+            print("[PaymentViewModel] INFO: Loading currencies")
             do {
-                // Имитация процесса оплаты
-                try await Task.sleep(nanoseconds: 2_000_000_000)
+                let loadedCurrencies = try await service.loadCurrencies()
+                print("[PaymentViewModel] INFO: Loaded \(loadedCurrencies.count) currencies")
                 
-                // Пытаемся очистить корзину на сервере, но игнорируем ошибку
-                _ = try? await service.updateBasket(nftIds: [])
-                
-                view?.hidePaymentProgress()
-                router.openSuccess()
-            } catch {
-                view?.hidePaymentProgress()
-                router.showPaymentError { [weak self] in
-                    self?.payWithCurrency(currency)
+                // Сортируем валюты в правильном порядке
+                let order = ["Bitcoin", "Dogecoin", "Tether", "Apecoin", "Solana", "Ethereum", "Cardano", "Shiba Inu"]
+                currencies = loadedCurrencies.sorted { currency1, currency2 in
+                    let index1 = order.firstIndex(of: currency1.title) ?? Int.max
+                    let index2 = order.firstIndex(of: currency2.title) ?? Int.max
+                    return index1 < index2
                 }
+                print("[PaymentViewModel] INFO: Currencies sorted")
+            } catch {
+                print("[PaymentViewModel] ERROR: Failed to load currencies - \(error.localizedDescription)")
+                currencies = []
             }
         }
     }
     
-    private func stateDidChange() async {
-        switch state {
-        case .initial:
-            break
-        case .loading:
-            view?.showLoading()
-            await loadCurrencies()
-        case .data(let currencies):
-            view?.hideLoading()
-            view?.displayCurrencies(currencies)
-        case .failed(let error):
-            view?.hideLoading()
-            let errorModel = makeErrorModel(error)
-            view?.showError(errorModel)
-        }
+    func selectCurrency(_ currency: Currency) {
+        print("[PaymentViewModel] INFO: Selected currency: \(currency.title)")
+        selectedCurrency = currency
     }
     
-    private func loadCurrencies() async {
-        do {
-            let currencies = try await service.loadCurrencies()
-            state = .data(currencies)
-        } catch {
-            // Временно: создаем тестовые валюты (картинки загрузятся из Assets по названию)
-            let mockCurrencies = [
-                Currency(
-                    id: "1",
-                    title: "BTC",
-                    name: "Bitcoin",
-                    image: URL(string: "https://placeholder.com/bitcoin")!
-                ),
-                Currency(
-                    id: "2",
-                    title: "ETH",
-                    name: "Ethereum",
-                    image: URL(string: "https://placeholder.com/ethereum")!
-                ),
-                Currency(
-                    id: "3",
-                    title: "USDT",
-                    name: "Tether",
-                    image: URL(string: "https://placeholder.com/tether")!
-                ),
-                Currency(
-                    id: "4",
-                    title: "DOGE",
-                    name: "Dogecoin",
-                    image: URL(string: "https://placeholder.com/dogecoin")!
-                )
-            ]
-            state = .data(mockCurrencies)
-        }
-    }
-    
-    private func makeErrorModel(_ error: Error) -> ErrorModel {
-        let message: String
-        switch error {
-        case is NetworkClientError:
-            message = NSLocalizedString("Error.network", comment: "")
-        default:
-            message = NSLocalizedString("Error.unknown", comment: "")
+    func pay() {
+        guard selectedCurrency != nil else {
+            print("[PaymentViewModel] WARNING: Payment attempted without selected currency")
+            return
         }
         
-        let actionText = NSLocalizedString("Error.repeat", comment: "")
-        return ErrorModel(message: message, actionText: actionText) { [weak self] in
-            self?.state = .loading
+        Task {
+            print("[PaymentViewModel] INFO: Starting payment process")
+            isProcessing = true
+            
+            // Имитация процесса оплаты
+            print("[PaymentViewModel] INFO: Processing payment (2 seconds)")
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            
+            // Очищаем корзину на сервере
+            print("[PaymentViewModel] INFO: Clearing basket on server")
+            do {
+                try await service.updateBasket(nftIds: [])
+                print("[PaymentViewModel] INFO: Basket cleared successfully")
+            } catch {
+                print("[PaymentViewModel] ERROR: Failed to clear basket - \(error.localizedDescription)")
+            }
+            
+            // Даем серверу время на обработку
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            
+            isProcessing = false
+            showSuccess = true
+            print("[PaymentViewModel] INFO: Payment completed successfully")
         }
     }
 }

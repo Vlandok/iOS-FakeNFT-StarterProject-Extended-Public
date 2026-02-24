@@ -1,8 +1,10 @@
 import SwiftUI
 
 struct TabBarView: View {
+    @State private var selectedTab = 0
+    
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             // Профиль
             ProfileView()
                 .tabItem {
@@ -13,6 +15,7 @@ struct TabBarView: View {
                             .renderingMode(.template)
                     }
                 }
+                .tag(0)
             
             // Каталог
             TestCatalogView()
@@ -22,15 +25,19 @@ struct TabBarView: View {
                         systemImage: "square.stack.3d.up.fill"
                     )
                 }
+                .tag(1)
             
             // Корзина
-            CartPlaceholderView()
+            BasketTabView()
                 .tabItem {
-                    Label(
-                        NSLocalizedString("Tab.cart", comment: ""),
-                        systemImage: "bag.fill"
-                    )
+                    Label {
+                        Text(NSLocalizedString("Tab.cart", comment: ""))
+                    } icon: {
+                        Image("Basket")
+                            .renderingMode(.template)
+                    }
                 }
+                .tag(2)
             
             // Статистика
             StatisticsPlaceholderView()
@@ -40,19 +47,25 @@ struct TabBarView: View {
                         systemImage: "flag.2.crossed.fill"
                     )
                 }
+                .tag(3)
         }
         .tint(Color(.ypBlue))
+        .onChange(of: selectedTab) { oldValue, newValue in
+            if newValue == 2 {
+                print("[TabBarView] INFO: Switched to basket tab, posting refresh notification")
+                NotificationCenter.default.post(name: NSNotification.Name("RefreshBasket"), object: nil)
+            }
+        }
+        .onAppear {
+            if selectedTab == 2 {
+                print("[TabBarView] INFO: Initial load with basket tab selected")
+                NotificationCenter.default.post(name: NSNotification.Name("RefreshBasket"), object: nil)
+            }
+        }
     }
 }
 
 // MARK: - Placeholder Views
-
-struct CartPlaceholderView: View {
-    var body: some View {
-        Text("Корзина")
-            .font(.title)
-    }
-}
 
 struct StatisticsPlaceholderView: View {
     var body: some View {
@@ -61,15 +74,15 @@ struct StatisticsPlaceholderView: View {
     }
 }
 
-struct BasketTabView: UIViewControllerRepresentable {
+struct BasketTabView: View {
     @Environment(ServicesAssembly.self) private var services
+    @State private var isTabBarVisible = true
     
-    func makeUIViewController(context: Context) -> UIViewController {
-        let assembly = BasketAssembly()
-        return assembly.build(service: services.basketService)
-    }
-    
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+    var body: some View {
+        BasketSwiftUIView(service: services.basketService, isTabBarVisible: $isTabBarVisible)
+            .onAppear {
+                isTabBarVisible = true
+            }
     }
 }
 
