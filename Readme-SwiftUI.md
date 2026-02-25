@@ -1,5 +1,10 @@
 # ТЗ мобильного приложения FakeNFT
 
+## Архитектура и верстка
+
+- **Архитектура:** MVVM (Model-View-ViewModel)
+- **Способ верстки:** SwiftUI
+
 ## Ссылки
 
 [Дизайн Figma](https://www.figma.com/design/Uz5G39wRRCr2mRE4SbnNla/FakeNFT--YP-)

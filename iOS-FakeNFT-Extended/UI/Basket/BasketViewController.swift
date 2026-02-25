@@ -2,7 +2,6 @@ import SwiftUI
 
 struct BasketSwiftUIView: View {
     @StateObject private var viewModel: BasketViewModel
-    @State private var refreshID = UUID()
     @State private var hasAppeared = false
     @Binding var isTabBarVisible: Bool
     
@@ -18,13 +17,13 @@ struct BasketSwiftUIView: View {
                     emptyStateView
                 } else {
                     basketContentView
+                        .id(viewModel.sortTrigger) // Пересоздаём при изменении sortTrigger
                 }
                 
                 if viewModel.isLoading {
                     ProgressView()
                 }
             }
-            .id(refreshID)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -39,15 +38,20 @@ struct BasketSwiftUIView: View {
             }
             .confirmationDialog("Сортировка", isPresented: $viewModel.showSortOptions) {
                 Button(NSLocalizedString("Basket.sort.price", comment: "")) {
+                    print("[BasketView] INFO: User selected sort by price")
                     viewModel.sortBy(.byPrice)
                 }
                 Button(NSLocalizedString("Basket.sort.rating", comment: "")) {
+                    print("[BasketView] INFO: User selected sort by rating")
                     viewModel.sortBy(.byRating)
                 }
                 Button(NSLocalizedString("Basket.sort.name", comment: "")) {
+                    print("[BasketView] INFO: User selected sort by name")
                     viewModel.sortBy(.byName)
                 }
-                Button(NSLocalizedString("Basket.sort.cancel", comment: ""), role: .cancel) {}
+                Button(NSLocalizedString("Basket.sort.cancel", comment: ""), role: .cancel) {
+                    print("[BasketView] INFO: User cancelled sort")
+                }
             }
             .fullScreenCover(item: $viewModel.itemToDelete) { item in
                 DeleteConfirmationSwiftUIView(item: item) {
@@ -57,8 +61,7 @@ struct BasketSwiftUIView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RefreshBasket"))) { _ in
                 print("[BasketView] INFO: Received RefreshBasket notification")
-                refreshID = UUID()
-                hasAppeared = false // Сбрасываем флаг для повторной загрузки
+                hasAppeared = false 
                 viewModel.loadBasket()
             }
             .onAppear {
@@ -85,16 +88,16 @@ struct BasketSwiftUIView: View {
     
     private var basketContentView: some View {
         VStack(spacing: 0) {
-            List {
-                ForEach(viewModel.items) { item in
-                    BasketItemRow(item: item) {
-                        viewModel.itemToDelete = item
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(viewModel.items, id: \.id) { item in
+                        BasketItemRow(item: item) {
+                            viewModel.itemToDelete = item
+                        }
                     }
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets())
                 }
             }
-            .listStyle(.plain)
+            .id(viewModel.sortTrigger) // Пересоздаём список при изменении sortTrigger
             
             bottomPanel
         }
@@ -119,7 +122,7 @@ struct BasketSwiftUIView: View {
                     Text(NSLocalizedString("Basket.pay", comment: ""))
                         .font(.custom("SFProText-Bold", size: 17))
                         .foregroundColor(.white)
-                        .frame(width: 240, height: 60)
+                        .frame(width: 240, height: 44)
                         .background(Color.black)
                         .cornerRadius(16)
                 }
