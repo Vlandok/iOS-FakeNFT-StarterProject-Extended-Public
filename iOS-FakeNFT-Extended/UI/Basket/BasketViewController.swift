@@ -65,7 +65,6 @@ struct BasketSwiftUIView: View {
                 viewModel.loadBasket()
             }
             .onAppear {
-                // Загружаем только при первом появлении
                 if !hasAppeared {
                     print("[BasketView] INFO: First appearance, loading basket")
                     hasAppeared = true
@@ -97,8 +96,7 @@ struct BasketSwiftUIView: View {
                     }
                 }
             }
-            .id(viewModel.sortTrigger) // Пересоздаём список при изменении sortTrigger
-            
+            .id(viewModel.sortTrigger) 
             bottomPanel
         }
     }
