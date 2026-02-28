@@ -41,7 +41,7 @@ struct PaymentSuccessSwiftUIView: View {
                 }
             }) {
                 Text(NSLocalizedString("Success.back", comment: ""))
-                    .font(.system(size: 17, weight: .regular))
+                    .font(.system(size: 17, weight: .bold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 60)
@@ -59,7 +59,7 @@ struct PaymentSuccessSwiftUIView: View {
     
     private func findAndPopNavigation(in viewController: UIViewController) {
         if let navController = findNavigationController(in: viewController) {
-            // Возвращаемся к корзине (popToRoot вернет к первому экрану в navigation stack)
+            // Возвращаемся к корзине
             navController.popToRootViewController(animated: true)
         }
     }
