@@ -77,4 +77,9 @@ class PaymentViewModel: ObservableObject {
             print("[PaymentViewModel] INFO: Payment completed successfully")
         }
     }
+    
+    func resetNavigation() {
+        showSuccess = false
+        print("[PaymentViewModel] INFO: Navigation state reset")
+    }
 }

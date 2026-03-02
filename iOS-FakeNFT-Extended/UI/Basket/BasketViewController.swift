@@ -3,6 +3,7 @@ import SwiftUI
 struct BasketSwiftUIView: View {
     @StateObject private var viewModel: BasketViewModel
     @State private var hasAppeared = false
+    @State private var isNavigatingToPayment = false
     @Binding var isTabBarVisible: Bool
     
     init(service: BasketService, isTabBarVisible: Binding<Bool>) {
@@ -61,8 +62,13 @@ struct BasketSwiftUIView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RefreshBasket"))) { _ in
                 print("[BasketView] INFO: Received RefreshBasket notification")
+                isNavigatingToPayment = false // Сбрасываем флаг навигации
                 hasAppeared = false 
                 viewModel.loadBasket()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ResetBasketNavigation"))) { _ in
+                print("[BasketView] INFO: Received ResetBasketNavigation notification")
+                isNavigatingToPayment = false // Принудительно сбрасываем навигацию
             }
             .onAppear {
                 if !hasAppeared {
@@ -116,13 +122,20 @@ struct BasketSwiftUIView: View {
                 
                 Spacer()
                 
-                NavigationLink(destination: PaymentSwiftUIView(items: viewModel.items, service: viewModel.service, isTabBarVisible: $isTabBarVisible)) {
-                    Text(NSLocalizedString("Basket.pay", comment: ""))
-                        .font(.custom("SFProText-Bold", size: 17))
-                        .foregroundColor(.white)
-                        .frame(width: 240, height: 44)
-                        .background(Color.black)
-                        .cornerRadius(16)
+                NavigationLink(
+                    destination: PaymentSwiftUIView(items: viewModel.items, service: viewModel.service, isTabBarVisible: $isTabBarVisible),
+                    isActive: $isNavigatingToPayment
+                ) {
+                    Button(action: {
+                        isNavigatingToPayment = true
+                    }) {
+                        Text(NSLocalizedString("Basket.pay", comment: ""))
+                            .font(.custom("SFProText-Bold", size: 17))
+                            .foregroundColor(.white)
+                            .frame(width: 240, height: 44)
+                            .background(Color.black)
+                            .cornerRadius(16)
+                    }
                 }
             }
             .padding(.horizontal, 16)

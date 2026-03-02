@@ -54,6 +54,7 @@ struct PaymentSwiftUIView: View {
             if !viewModel.showSuccess {
                 isTabBarVisible = true
             }
+            viewModel.resetNavigation()
         }
     }
     
