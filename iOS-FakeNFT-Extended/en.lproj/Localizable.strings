@@ -73,3 +73,9 @@
 "Success.title" = "Успех! Оплата прошла";
 "Success.message" = "Спасибо за покупку NFT! Ваши токены уже в пути.";
 "Success.back" = "Вернуться в корзину";
+// MARK: - Catalog
+"Catalog.sortTitle" = "Сортировка";
+"Catalog.sortByName" = "По названию";
+"Catalog.sortByNftCount" = "По количеству NFT";
+"Catalog.cancelButton" = "Отмена";
+"Collection.author" = "Автор коллекции:";
