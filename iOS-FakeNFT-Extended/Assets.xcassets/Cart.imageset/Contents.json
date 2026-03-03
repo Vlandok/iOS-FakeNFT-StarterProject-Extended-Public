@@ -2,7 +2,6 @@
   "images" : [
     {
       "filename" : "Cart.pdf",
-      "idiom" : "universal"
       "idiom" : "universal",
       "scale" : "1x"
     },
