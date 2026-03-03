@@ -28,14 +28,14 @@ struct ProfileUpdateRequest: NetworkRequest {
 }
 
 /// DTO для обновления профиля
-struct ProfileUpdateDTO: Encodable, Sendable {
-    let name: String?
-    let description: String?
-    let website: String?
-    let avatar: String?
-    let likes: [String]?
+public struct ProfileUpdateDTO: Encodable, Sendable {
+    public let name: String?
+    public let description: String?
+    public let website: String?
+    public let avatar: String?
+    public let likes: [String]?
     
-    init(
+    public init(
         name: String? = nil,
         description: String? = nil,
         website: String? = nil,

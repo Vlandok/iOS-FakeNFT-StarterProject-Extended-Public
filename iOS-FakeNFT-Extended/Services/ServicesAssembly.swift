@@ -4,6 +4,7 @@ import Foundation
 @MainActor
 final class ServicesAssembly {
     
+    private let networkClient: NetworkClient
     let networkClient: NetworkClient
     private let nftStorage: NftStorage
     
@@ -28,6 +29,7 @@ final class ServicesAssembly {
         )
     }
     
+    
     var profileService: ProfileService {
         if let service = _profileService {
             return service
@@ -37,6 +39,8 @@ final class ServicesAssembly {
         return service
     }
     
+    var basketService: BasketService {
+        BasketServiceImpl(networkClient: networkClient)
     var collectionsService: CollectionsService {
         if let service = _collectionsService {
             return service

@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - NftService (для детальной страницы NFT)
 
-protocol NftService: Sendable {
+public protocol NftService: Sendable {
     func loadNft(id: String) async throws -> Nft
 }
 
@@ -30,7 +30,7 @@ actor NftServiceImpl: NftService {
 
 // MARK: - MyNFTListService (для экрана "Мои NFT")
 
-protocol MyNFTListService: Sendable {
+public protocol MyNFTListService: Sendable {
     func loadNFT(id: String) async throws -> NFTNetworkModel
     func loadNFTs(ids: [String]) async throws -> [NFTNetworkModel]
 }

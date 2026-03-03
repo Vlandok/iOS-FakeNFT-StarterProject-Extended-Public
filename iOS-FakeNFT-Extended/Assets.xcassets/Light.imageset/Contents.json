@@ -1,13 +1,11 @@
 {
   "images" : [
     {
-      "filename" : "Cart.pdf",
-      "idiom" : "universal"
+      "filename" : "Light.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "Cart.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
