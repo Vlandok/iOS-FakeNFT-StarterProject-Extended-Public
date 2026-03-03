@@ -1,6 +1,6 @@
 import Foundation
 
-enum NetworkClientError: Error {
+public enum NetworkClientError: Error {
     case httpStatusCode(Int)
     case urlRequestError(Error)
     case urlSessionError
@@ -8,17 +8,17 @@ enum NetworkClientError: Error {
     case incorrectRequest(String)
 }
 
-protocol NetworkClient {
+public protocol NetworkClient {
     func send(request: NetworkRequest) async throws -> Data
     func send<T: Decodable>(request: NetworkRequest) async throws -> T
 }
 
-actor DefaultNetworkClient: NetworkClient {
+public actor DefaultNetworkClient: NetworkClient {
     private let session: URLSession
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
 
-    init(
+    public init(
         session: URLSession = URLSession.shared,
         decoder: JSONDecoder = JSONDecoder(),
         encoder: JSONEncoder = JSONEncoder()
@@ -28,7 +28,7 @@ actor DefaultNetworkClient: NetworkClient {
         self.encoder = encoder
     }
 
-    func send(request: NetworkRequest) async throws -> Data {
+    public func send(request: NetworkRequest) async throws -> Data {
         let urlRequest = try create(request: request)
         let (data, response) = try await session.data(for: urlRequest)
         guard let response = response as? HTTPURLResponse else {
@@ -40,7 +40,7 @@ actor DefaultNetworkClient: NetworkClient {
         return data
     }
 
-    func send<T: Decodable>(request: NetworkRequest) async throws -> T {
+    public func send<T: Decodable>(request: NetworkRequest) async throws -> T {
         let data = try await send(request: request)
         return try await parse(data: data)
     }
@@ -55,14 +55,52 @@ actor DefaultNetworkClient: NetworkClient {
         var urlRequest = URLRequest(url: endpoint)
         urlRequest.httpMethod = request.httpMethod.rawValue
 
-        if let dto = request.dto,
-           let dtoEncoded = try? encoder.encode(dto) {
-            urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            urlRequest.httpBody = dtoEncoded
+        if let dto = request.dto {
+            switch request.contentType {
+            case .json:
+                if let dtoEncoded = try? encoder.encode(dto) {
+                    urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    urlRequest.httpBody = dtoEncoded
+                }
+            case .formUrlEncoded:
+                urlRequest.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+                urlRequest.httpBody = encodeFormUrlEncoded(dto)
+            }
         }
         urlRequest.addValue(RequestConstants.token, forHTTPHeaderField: "X-Practicum-Mobile-Token")
 
         return urlRequest
+    }
+    
+    private func encodeFormUrlEncoded(_ dto: Encodable) -> Data? {
+        guard let data = try? encoder.encode(dto),
+              let dictionary = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        
+        let formString = dictionary.compactMap { key, value -> String? in
+            if let array = value as? [String] {
+                let encodedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? key
+                // Handle empty arrays - don't send the parameter at all
+                if array.isEmpty {
+                    return nil
+                }
+                // Encode arrays as multiple values with same key
+                return array.map { item in
+                    let encodedValue = item.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? item
+                    return "\(encodedKey)=\(encodedValue)"
+                }.joined(separator: "&")
+            } else {
+                let stringValue = String(describing: value)
+                guard let encodedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                      let encodedValue = stringValue.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+                    return nil
+                }
+                return "\(encodedKey)=\(encodedValue)"
+            }
+        }.joined(separator: "&")
+        
+        return formString.data(using: .utf8)
     }
 
     private func parse<T: Decodable>(data: Data) async throws -> T {

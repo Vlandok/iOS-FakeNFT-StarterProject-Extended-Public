@@ -1,18 +1,19 @@
 import Foundation
 
-protocol NftService {
+// MARK: - NftService (для детальной страницы NFT)
+
+public protocol NftService: Sendable {
     func loadNft(id: String) async throws -> Nft
 }
 
-@MainActor
-final class NftServiceImpl: NftService {
+actor NftServiceImpl: NftService {
 
     private let networkClient: NetworkClient
     private let storage: NftStorage
 
     init(networkClient: NetworkClient, storage: NftStorage) {
-        self.storage = storage
         self.networkClient = networkClient
+        self.storage = storage
     }
 
     func loadNft(id: String) async throws -> Nft {
@@ -24,5 +25,42 @@ final class NftServiceImpl: NftService {
         let nft: Nft = try await networkClient.send(request: request)
         await storage.saveNft(nft)
         return nft
+    }
+}
+
+// MARK: - MyNFTListService (для экрана "Мои NFT")
+
+public protocol MyNFTListService: Sendable {
+    func loadNFT(id: String) async throws -> NFTNetworkModel
+    func loadNFTs(ids: [String]) async throws -> [NFTNetworkModel]
+}
+
+actor MyNFTListServiceImpl: MyNFTListService {
+    
+    private let networkClient: NetworkClient
+    
+    init(networkClient: NetworkClient) {
+        self.networkClient = networkClient
+    }
+    
+    func loadNFT(id: String) async throws -> NFTNetworkModel {
+        let request = NFTByIdRequest(nftId: id)
+        return try await networkClient.send(request: request)
+    }
+    
+    func loadNFTs(ids: [String]) async throws -> [NFTNetworkModel] {
+        try await withThrowingTaskGroup(of: NFTNetworkModel.self) { group in
+            for id in ids {
+                group.addTask {
+                    try await self.loadNFT(id: id)
+                }
+            }
+            
+            var results: [NFTNetworkModel] = []
+            for try await nft in group {
+                results.append(nft)
+            }
+            return results
+        }
     }
 }

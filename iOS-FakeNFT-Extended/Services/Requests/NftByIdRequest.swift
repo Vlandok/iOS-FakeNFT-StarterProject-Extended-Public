@@ -1,10 +1,14 @@
 import Foundation
 
-struct NFTRequest: NetworkRequest {
+public struct NFTRequest: NetworkRequest {
 
-    let id: String
+    public let id: String
+    
+    public init(id: String) {
+        self.id = id
+    }
 
-    var endpoint: URL? {
+    public var endpoint: URL? {
         URL(string: "\(RequestConstants.baseURL)/api/v1/nft/\(id)")
     }
 }
