@@ -27,21 +27,29 @@ struct PaymentSuccessSwiftUIView: View {
             Spacer()
             
             Button(action: {
-                // Отправляем уведомление для обновления корзины
-                NotificationCenter.default.post(name: NSNotification.Name("RefreshBasket"), object: nil)
-                
-                // Показываем TabBar перед возвратом
+                // Показываем TabBar
                 isTabBarVisible = true
                 
-                // Возвращаемся назад через navigation stack
+                // Закрываем все модальные окна и возвращаемся к root
                 if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                    let window = windowScene.windows.first,
                    let rootVC = window.rootViewController {
-                    findAndPopNavigation(in: rootVC)
+                    dismissAllPresentedViewControllers(from: rootVC)
+                }
+                
+                // Сбрасываем navigation stack корзины
+                NotificationCenter.default.post(name: NSNotification.Name("ResetBasketNavigation"), object: nil)
+                
+                // Переключаемся на таб корзины
+                NotificationCenter.default.post(name: NSNotification.Name("SwitchToBasketTab"), object: nil)
+                
+                // Обновляем корзину с задержкой
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    NotificationCenter.default.post(name: NSNotification.Name("RefreshBasket"), object: nil)
                 }
             }) {
                 Text(NSLocalizedString("Success.back", comment: ""))
-                    .font(.system(size: 17, weight: .regular))
+                    .font(.system(size: 17, weight: .bold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 60)
@@ -57,9 +65,17 @@ struct PaymentSuccessSwiftUIView: View {
         }
     }
     
+    private func dismissAllPresentedViewControllers(from viewController: UIViewController) {
+        if let presented = viewController.presentedViewController {
+            presented.dismiss(animated: false) {
+                self.dismissAllPresentedViewControllers(from: viewController)
+            }
+        }
+    }
+    
     private func findAndPopNavigation(in viewController: UIViewController) {
         if let navController = findNavigationController(in: viewController) {
-            // Возвращаемся к корзине (popToRoot вернет к первому экрану в navigation stack)
+            // Возвращаемся к корзине
             navController.popToRootViewController(animated: true)
         }
     }

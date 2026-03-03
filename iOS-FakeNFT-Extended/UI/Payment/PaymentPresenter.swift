@@ -27,7 +27,6 @@ class PaymentViewModel: ObservableObject {
                 let loadedCurrencies = try await service.loadCurrencies()
                 print("[PaymentViewModel] INFO: Loaded \(loadedCurrencies.count) currencies")
                 
-                // Сортируем валюты в правильном порядке
                 let order = ["Bitcoin", "Dogecoin", "Tether", "Apecoin", "Solana", "Ethereum", "Cardano", "Shiba Inu"]
                 currencies = loadedCurrencies.sorted { currency1, currency2 in
                     let index1 = order.firstIndex(of: currency1.title) ?? Int.max
@@ -77,5 +76,10 @@ class PaymentViewModel: ObservableObject {
             showSuccess = true
             print("[PaymentViewModel] INFO: Payment completed successfully")
         }
+    }
+    
+    func resetNavigation() {
+        showSuccess = false
+        print("[PaymentViewModel] INFO: Navigation state reset")
     }
 }

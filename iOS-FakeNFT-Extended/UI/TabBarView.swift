@@ -62,6 +62,10 @@ struct TabBarView: View {
                 NotificationCenter.default.post(name: NSNotification.Name("RefreshBasket"), object: nil)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToBasketTab"))) { _ in
+            print("[TabBarView] INFO: Received SwitchToBasketTab notification")
+            selectedTab = 2
+        }
     }
 }
 
@@ -77,11 +81,17 @@ struct StatisticsPlaceholderView: View {
 struct BasketTabView: View {
     @Environment(ServicesAssembly.self) private var services
     @State private var isTabBarVisible = true
+    @State private var navigationKey = UUID()
     
     var body: some View {
         BasketSwiftUIView(service: services.basketService, isTabBarVisible: $isTabBarVisible)
+            .id(navigationKey)
             .onAppear {
                 isTabBarVisible = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ResetBasketNavigation"))) { _ in
+                print("[BasketTabView] INFO: Resetting navigation stack")
+                navigationKey = UUID()
             }
     }
 }
